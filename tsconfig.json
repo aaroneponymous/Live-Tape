@@ -11,11 +11,14 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true,
-    "rootDir": "packages/schemas/src",
+    "rootDir": "packages",
     "outDir": "dist",
     "declaration": true,
     "sourceMap": true,
     "skipLibCheck": true
   },
-  "include": ["packages/schemas/src/**/*.ts"]
+  "include": [
+    "packages/schemas/src/**/*.ts",
+    "packages/artifact-storage/src/**/*.ts"
+  ]
 }

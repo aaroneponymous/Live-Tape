@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit --pretty false",
-    "test": "tsc --pretty false && node --test dist/raw-snapshot.test.js"
+    "test": "tsc --pretty false && node --test dist/schemas/src/raw-snapshot.test.js dist/artifact-storage/src/artifact-store.test.js"
   },
   "devDependencies": {
     "@types/node": "^18.19.64",

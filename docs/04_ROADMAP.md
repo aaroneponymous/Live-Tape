@@ -51,8 +51,10 @@ Exit Criteria:
 - 72 hours unattended;
 - captures traceable to raw evidence.
 
-The raw-snapshot contract is in place. Browser orchestration, source
-adapters, normalization, and persistence are not.
+The raw-snapshot contract and a local filesystem artifact store are in
+place. Browser orchestration, source adapters, normalization,
+PostgreSQL persistence, and historical export are not. No production
+object-storage provider has been selected.
 
 ---
 

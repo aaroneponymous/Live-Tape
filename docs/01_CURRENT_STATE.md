@@ -29,9 +29,19 @@ The implemented collection boundary is the canonical `RawSnapshot`
 contract in `packages/schemas`: one successfully persisted immutable
 capture, with snapshot identity, source identity, source URL, capture
 time, content-hash metadata, and references to raw HTML and screenshot
-artifacts. `./scripts/verify.sh` typechecks and tests that contract.
+artifacts.
 
-Browser collection, source adapters, parsing, normalization,
+A local filesystem-backed artifact store in `packages/artifact-storage`
+persists raw HTML and screenshot bytes and returns storage-agnostic
+artifact references compatible with `RawSnapshot`. Retrieval verifies
+integrity before returning bytes. This store is a local development
+and test implementation. No production object-storage provider has
+been selected.
+
+`./scripts/verify.sh` typechecks and tests the contract and the local
+store.
+
+Browser capture, source adapters, parsing, normalization, PostgreSQL
 persistence, scheduling, and historical export are not implemented.
 
 The collector should eventually:
@@ -50,7 +60,8 @@ The collector should eventually:
 
 ## 3. Intended Data Flow
 
-Only the raw-snapshot contract exists. Later stages remain future work.
+The raw-snapshot contract and a local immutable artifact store exist.
+Later stages remain future work.
 
 ```text
 Source
