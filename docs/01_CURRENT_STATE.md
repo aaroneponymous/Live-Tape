@@ -1,8 +1,9 @@
 # Live Tape — Current State
 
 **Status:** Active  
-**Last Updated:** 2026-09-26  
-**Project Phase:** Research / Validation / Data Infrastructure
+**Last Updated:** 2026-09-27  
+**Project Phase:** Research / Validation / Data Infrastructure  
+**Roadmap Phase:** Phase 1 — Historical Data Collector (in progress)
 
 ---
 
@@ -24,7 +25,16 @@ The immediate focus is:
 
 Build an automated historical event and market-data collection system.
 
-The system should:
+The implemented collection boundary is the canonical `RawSnapshot`
+contract in `packages/schemas`: one successfully persisted immutable
+capture, with snapshot identity, source identity, source URL, capture
+time, content-hash metadata, and references to raw HTML and screenshot
+artifacts. `./scripts/verify.sh` typechecks and tests that contract.
+
+Browser collection, source adapters, parsing, normalization,
+persistence, scheduling, and historical export are not implemented.
+
+The collector should eventually:
 
 - discover or receive target event pages;
 - visit supported sources using browser automation;
@@ -38,7 +48,9 @@ The system should:
 
 ---
 
-## 3. Current Proposed Data Flow
+## 3. Intended Data Flow
+
+Only the raw-snapshot contract exists. Later stages remain future work.
 
 ```text
 Source

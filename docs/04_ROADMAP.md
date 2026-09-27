@@ -1,12 +1,14 @@
 # Live Tape — Roadmap
 
-**Last Updated:** 2026-09-26
+**Last Updated:** 2026-09-27
 
 ---
 
 # Phase 0 — Project Operating System
 
-Status: IN PROGRESS
+Status: COMPLETE
+
+Completed: 2026-09-27
 
 Goals:
 
@@ -21,11 +23,18 @@ Exit Criteria:
 - decisions and unknowns are clearly separated;
 - Cursor reliably follows project instructions.
 
+The repository contains canonical docs, Cursor rules, researcher /
+implementer / verifier agents, the implement-feature and
+update-project-state skills, task contracts, and `scripts/verify.sh`.
+Decisions D-001 through D-007 are separate from open questions Q-001
+through Q-010. TASK-001 completed that workflow through independent
+verification.
+
 ---
 
 # Phase 1 — Historical Data Collector
 
-Status: NEXT
+Status: IN PROGRESS
 
 Goals:
 
@@ -41,6 +50,9 @@ Exit Criteria:
 - five events;
 - 72 hours unattended;
 - captures traceable to raw evidence.
+
+The raw-snapshot contract is in place. Browser orchestration, source
+adapters, normalization, and persistence are not.
 
 ---
 

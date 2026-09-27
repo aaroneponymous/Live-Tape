@@ -1,0 +1,13 @@
+{
+  "name": "live-tape",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit --pretty false",
+    "test": "tsc --pretty false && node --test dist/raw-snapshot.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.64",
+    "typescript": "^5.9.2"
+  }
+}

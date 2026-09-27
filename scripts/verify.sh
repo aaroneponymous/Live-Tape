@@ -299,7 +299,17 @@ if [[ -f "package.json" ]]; then
   pass "package.json detected"
 
   if command -v npm >/dev/null 2>&1; then
-    echo "      NOTE: canonical TypeScript validation is not configured yet."
+    if npm run typecheck; then
+      pass "npm run typecheck"
+    else
+      fail "npm run typecheck"
+    fi
+
+    if npm test; then
+      pass "npm test"
+    else
+      fail "npm test"
+    fi
   else
     warn "package.json exists but npm is unavailable"
   fi
