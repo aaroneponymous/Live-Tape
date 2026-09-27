@@ -1,0 +1,930 @@
+---
+description: C++ conventions for deterministic market infrastructure, simulation, and replay
+globs:
+  - "cpp/**/*.cpp"
+  - "cpp/**/*.cc"
+  - "cpp/**/*.cxx"
+  - "cpp/**/*.h"
+  - "cpp/**/*.hpp"
+  - "cpp/**/*.hh"
+  - "replay/**/*.cpp"
+  - "replay/**/*.cc"
+  - "replay/**/*.cxx"
+  - "replay/**/*.h"
+  - "replay/**/*.hpp"
+  - "replay/**/*.hh"
+alwaysApply: false
+---
+
+# C++ Market Infrastructure
+
+C++ is reserved primarily for deterministic market infrastructure under
+D-006.
+
+Primary responsibilities may include:
+
+- order books;
+- order matching;
+- auctions;
+- market simulation;
+- historical replay execution;
+- deterministic market mechanics;
+- execution-event generation;
+- market-state transitions.
+
+Do not place ordinary application or SaaS responsibilities in this
+domain.
+
+C++ market infrastructure should not own:
+
+- browser automation;
+- web scraping;
+- source adapters;
+- HTML parsing;
+- authentication;
+- user-management APIs;
+- admin UI behavior;
+- scheduling;
+- notification delivery;
+- payment-provider integration;
+- ticket-platform automation;
+- customer-support workflows.
+
+Those responsibilities belong elsewhere in the Live Tape architecture.
+
+---
+
+## Current Project Stage
+
+Production matching infrastructure is not the current implementation
+priority.
+
+The current Live Tape priority is historical event and market-data
+collection.
+
+C++ work during the current phase must be explicitly scoped as one of:
+
+- a research experiment;
+- a market-structure simulator;
+- a replay prototype;
+- a deterministic engine prototype;
+- a benchmark answering a documented technical question.
+
+Do not allow experimental C++ work to silently become production
+exchange infrastructure.
+
+Do not introduce production-grade complexity merely because it could
+eventually be useful.
+
+Examples of currently unjustified complexity include:
+
+- kernel bypass;
+- DPDK;
+- custom network stacks;
+- distributed matching;
+- complex lock-free infrastructure;
+- custom allocators without measured need;
+- manual NUMA placement;
+- microsecond-level latency optimization;
+- elaborate replication protocols.
+
+Measure before optimizing.
+
+---
+
+## Engineering Priorities
+
+Prefer, in order:
+
+1. correctness;
+2. determinism;
+3. replayability;
+4. explicit state ownership;
+5. testability;
+6. recoverability;
+7. simplicity;
+8. maintainability;
+9. measured performance.
+
+Performance work must not weaken correctness or determinism.
+
+---
+
+## Determinism
+
+Given identical:
+
+- input;
+- configuration;
+- initial state;
+- simulation seed where randomness is explicitly used;
+
+the engine or simulator should produce equivalent domain results.
+
+Avoid hidden dependencies on:
+
+- wall-clock time;
+- process-global mutable state;
+- nondeterministic thread interleavings;
+- unordered iteration when ordering affects domain behavior;
+- implicit random state;
+- environment-dependent behavior that changes market results.
+
+Simulation time should be explicit.
+
+Prefer passing time through the domain boundary rather than querying the
+system clock from inside matching logic.
+
+Example:
+
+```cpp
+struct CommandContext {
+    std::uint64_t sequence;
+    Timestamp timestamp;
+};
+```
+
+rather than:
+
+```cpp
+auto now = std::chrono::system_clock::now();
+```
+
+inside domain logic when the timestamp affects simulation behavior.
+
+---
+
+## Market State Ownership
+
+Mutable order-book state should have clear ownership.
+
+Prefer a single logical writer for a given order book or market shard.
+
+Avoid designs where multiple threads concurrently mutate the same
+order-book state unless there is a demonstrated need and the resulting
+ordering semantics are explicit and testable.
+
+The default model should favor:
+
+```text
+command stream
+      ↓
+single market-state owner
+      ↓
+deterministic state transition
+      ↓
+domain events
+```
+
+over:
+
+```text
+many threads
+      ↓
+shared mutable book
+      ↓
+locks / races / ambiguous ordering
+```
+
+Concurrency outside the matching path may be appropriate for:
+
+- networking;
+- persistence;
+- market-data publication;
+- analytics;
+- snapshot writing;
+- background processing.
+
+Concurrency must not make execution priority ambiguous.
+
+---
+
+## Command / Event Boundary
+
+Prefer a command-in, event-out architecture.
+
+Examples of commands:
+
+```text
+PlaceOrder
+CancelOrder
+ReplaceOrder
+RunAuction
+LoadSnapshot
+AdvanceSimulationTime
+```
+
+Examples of resulting domain events:
+
+```text
+OrderAccepted
+OrderRejected
+OrderCancelled
+OrderPartiallyFilled
+OrderFilled
+TradeExecuted
+AuctionCleared
+BookSnapshotProduced
+```
+
+The matching domain should not directly perform unrelated external side
+effects such as:
+
+- charging a credit card;
+- sending email;
+- transferring a ticket;
+- writing UI state;
+- calling a browser;
+- contacting a ticket platform.
+
+External systems react to domain events.
+
+---
+
+## Monetary Values
+
+Do not use floating-point values as the authoritative representation of
+money.
+
+Prefer explicit integer minor units or a strong price type.
+
+Example:
+
+```cpp
+struct Price {
+    std::int64_t cents;
+};
+```
+
+or:
+
+```cpp
+using PriceCents = std::int64_t;
+```
+
+Prefer explicit domain types over ambiguous primitive values when doing
+so improves correctness.
+
+Avoid APIs such as:
+
+```cpp
+void add_order(double price, int quantity);
+```
+
+Prefer:
+
+```cpp
+void add_order(Price price, Quantity quantity);
+```
+
+Do not mix:
+
+- dollars;
+- cents;
+- basis points;
+- percentages
+
+without explicit types or documented conversions.
+
+---
+
+## Quantity Semantics
+
+Quantities must be explicit and non-negative.
+
+Use unsigned or validated domain types where appropriate.
+
+Order state must preserve invariants such as:
+
+```text
+0 <= remaining_quantity <= original_quantity
+```
+
+A fill must never execute more than the remaining quantity of either
+participating order.
+
+Quantity conservation should be testable.
+
+---
+
+## Order Identity
+
+Orders must have stable unique identifiers.
+
+Do not use:
+
+- memory addresses;
+- container positions;
+- iterator identity
+
+as durable order identity.
+
+Prefer explicit IDs such as:
+
+```cpp
+struct OrderId {
+    std::uint64_t value;
+};
+```
+
+Identifiers used in replay or persisted event streams must remain stable
+across process executions.
+
+---
+
+## Sequence Numbers
+
+Accepted market commands should have deterministic ordering.
+
+Where appropriate, assign monotonically increasing sequence numbers.
+
+Example:
+
+```cpp
+struct SequenceNumber {
+    std::uint64_t value;
+};
+```
+
+Sequence numbers should make command ordering explicit and replayable.
+
+Do not derive matching priority from:
+
+- wall-clock precision alone;
+- thread arrival races;
+- container iteration order.
+
+For equal-price orders under price-time priority, deterministic sequence
+order should define priority.
+
+---
+
+## Continuous Matching
+
+If a continuous price-time order book is implemented, its semantics must
+be explicit.
+
+Typical intended behavior:
+
+### Buy priority
+
+Higher price first.
+
+At equal price:
+
+Earlier accepted sequence first.
+
+### Sell priority
+
+Lower price first.
+
+At equal price:
+
+Earlier accepted sequence first.
+
+After a continuous matching cycle completes, there should not remain
+immediately executable crossing orders unless the market mechanism
+explicitly permits that state.
+
+For a standard continuous market:
+
+```text
+best_bid < best_ask
+```
+
+should hold after matching completes.
+
+Do not assume continuous matching is the final Live Tape market
+mechanism.
+
+Q-010 remains open.
+
+---
+
+## Auction Mechanics
+
+Auction behavior must be implemented separately from continuous
+matching semantics.
+
+Potential auction objectives may include:
+
+1. maximize executable quantity;
+2. minimize residual imbalance;
+3. minimize distance from a reference price;
+4. deterministic final tie-breaking.
+
+Do not implement ambiguous clearing-price behavior.
+
+Every tie-break rule must be:
+
+- explicit;
+- deterministic;
+- documented;
+- tested.
+
+Keep auction parameters configurable enough to compare alternative
+mechanisms during research.
+
+---
+
+## Market Mechanism Research
+
+Q-010 remains unresolved.
+
+Potential mechanisms include:
+
+- continuous price-time order book;
+- periodic call auction;
+- frequent batch auction;
+- future constraint matching;
+- future RFQ-style mechanisms.
+
+Do not bake one unvalidated mechanism unnecessarily into:
+
+- historical data formats;
+- replay schemas;
+- canonical instrument models.
+
+Prefer reusable market inputs where practical so multiple mechanisms can
+consume the same dataset.
+
+---
+
+## Historical Replay Semantics
+
+Historical replay must respect what Live Tape actually observed.
+
+Q-009 remains open.
+
+Browser snapshots represent observed market state.
+
+They do not necessarily represent:
+
+- every submitted order;
+- every cancellation;
+- every trade;
+- every intermediate book state.
+
+Do not transform periodic snapshots into fictional order-by-order
+history without explicitly classifying the generated events as
+synthetic simulation input.
+
+Maintain a clear distinction between:
+
+```text
+OBSERVED HISTORICAL DATA
+```
+
+and:
+
+```text
+SYNTHETIC SIMULATION EVENTS
+```
+
+A replay record should preserve enough metadata to determine which it
+represents.
+
+---
+
+## Replay Input Boundary
+
+Keep replay/input formats narrow, explicit, and versioned.
+
+The C++ simulator should not know about:
+
+- HTML;
+- browser selectors;
+- Playwright;
+- screenshots;
+- source-specific DOM structures.
+
+The collector and replay-export layer should normalize historical data
+before it reaches the C++ domain.
+
+Conceptually:
+
+```text
+Browser Sources
+      ↓
+TypeScript Collector
+      ↓
+Normalized Observations
+      ↓
+Replay Export
+      ↓
+Stable Replay Format
+      ↓
+C++ Simulator / Engine
+```
+
+The C++ boundary should consume domain-relevant data only.
+
+---
+
+## Replay Versioning
+
+Replay schemas should be versioned.
+
+Do not silently change historical replay semantics while retaining the
+same schema version.
+
+A breaking change should result in a new replay format version or an
+explicit migration.
+
+The simulator should reject unsupported schema versions rather than
+silently guessing.
+
+---
+
+## Observed Time vs Event Time
+
+Preserve timestamp semantics from the data layer.
+
+Do not confuse:
+
+```text
+observed_at
+```
+
+with:
+
+```text
+source_event_at
+```
+
+If only observation time exists, replay logic must not treat it as an
+exact source-side order or trade timestamp.
+
+Missing event-time information should remain missing.
+
+---
+
+## State Transitions
+
+Prefer explicit state transitions.
+
+Avoid arbitrary mutation of domain objects from unrelated parts of the
+engine.
+
+For example, an order may move through states such as:
+
+```text
+NEW
+  ↓
+ACCEPTED
+  ↓
+PARTIALLY_FILLED
+  ↓
+FILLED
+```
+
+or:
+
+```text
+ACCEPTED
+  ↓
+CANCELLED
+```
+
+Invalid transitions should be rejected explicitly.
+
+Do not represent mutually exclusive domain states using unrelated
+booleans when an enum or state type would make invariants clearer.
+
+---
+
+## Container and Ownership Discipline
+
+Choose data structures based on domain requirements first.
+
+Do not optimize containers based on hypothetical performance.
+
+Prefer clear ownership using:
+
+- values;
+- RAII;
+- `std::unique_ptr` where dynamic ownership is necessary;
+- stable handles or IDs when persistent identity is required.
+
+Avoid unnecessary shared ownership.
+
+Use `std::shared_ptr` only when shared lifetime is genuinely part of the
+design.
+
+Be careful when retaining:
+
+- iterators;
+- references;
+- pointers
+
+into containers whose mutation may invalidate them.
+
+Correctness takes priority over cleverness.
+
+---
+
+## Memory Management
+
+Use ordinary RAII and standard containers by default.
+
+Do not introduce:
+
+- custom object pools;
+- arenas;
+- slab allocators;
+- bespoke memory managers
+
+without profiling or a clearly documented experimental purpose.
+
+If a custom allocator is introduced for research, benchmark it against
+the simpler implementation and preserve the simpler baseline where
+practical.
+
+---
+
+## Concurrency
+
+Do not introduce lock-free structures simply because the code is C++.
+
+Concurrency must solve an actual architectural requirement.
+
+If queues are used between subsystem boundaries, document:
+
+- producer model;
+- consumer model;
+- ownership;
+- ordering guarantees;
+- backpressure behavior;
+- shutdown semantics.
+
+For example, if an SPSC queue is appropriate, explicitly document that
+the system truly has one producer and one consumer.
+
+Do not use an SPSC data structure where runtime architecture can produce
+multiple writers.
+
+---
+
+## Error Handling
+
+Domain-invalid input should fail explicitly.
+
+Examples:
+
+- unknown instrument;
+- invalid order side;
+- zero quantity where forbidden;
+- negative or invalid monetary value;
+- duplicate order ID;
+- cancellation of nonexistent order;
+- unsupported replay version.
+
+Do not silently coerce invalid input into valid market behavior.
+
+Separate:
+
+- programmer invariants;
+- malformed external data;
+- expected domain rejection.
+
+Assertions may be appropriate for internal impossibilities, but should
+not replace normal validation of untrusted input.
+
+---
+
+## Invariants
+
+Important invariants should be documented and tested.
+
+Potential examples include:
+
+### Quantity
+
+```text
+0 <= remaining <= original
+```
+
+### Fill safety
+
+```text
+executed_quantity <= buyer_remaining
+executed_quantity <= seller_remaining
+```
+
+### Continuous book
+
+After matching:
+
+```text
+best_bid < best_ask
+```
+
+unless the mechanism explicitly permits otherwise.
+
+### Sequence
+
+Accepted command sequence numbers are monotonic.
+
+### Replay
+
+Same initial state + same input + same configuration
+produces equivalent domain output.
+
+### Identity
+
+An order ID refers to at most one logical order.
+
+Do not rely on comments alone for invariants that can be encoded in
+types, assertions, or tests.
+
+---
+
+## Testing
+
+Testing is part of the engine design.
+
+Where applicable, include tests for:
+
+- order acceptance;
+- order rejection;
+- price priority;
+- time/sequence priority;
+- partial fills;
+- full fills;
+- cancellation;
+- replacement;
+- duplicate IDs;
+- empty books;
+- multiple price levels;
+- deterministic replay;
+- auction clearing;
+- auction tie-breaking;
+- malformed replay input;
+- schema-version rejection.
+
+When a bug is found, add a regression test when practical.
+
+---
+
+## Property and Fuzz Testing
+
+Market infrastructure is particularly suitable for property testing.
+
+Potential properties include:
+
+- no order executes beyond remaining quantity;
+- total executed quantity is conserved;
+- canceled orders never execute afterward;
+- sequence priority is respected;
+- replay produces equivalent final state;
+- invalid state transitions are unreachable;
+- an auction never executes incompatible orders.
+
+Fuzzing or randomized command generation may be added once basic
+deterministic tests exist.
+
+Use explicit random seeds for reproducibility.
+
+---
+
+## Benchmarking
+
+Do not benchmark meaningless toy operations solely to produce impressive
+numbers.
+
+Benchmarks should answer concrete questions.
+
+Examples:
+
+- orders processed per second;
+- replay throughput;
+- latency distribution of matching operations;
+- effect of alternative book data structures;
+- memory consumption per resting order.
+
+Always preserve:
+
+- workload definition;
+- compiler configuration;
+- hardware information where relevant;
+- dataset size;
+- benchmark methodology.
+
+Performance results without reproducible methodology should not drive
+architecture decisions.
+
+---
+
+## Logging and Observability
+
+Core deterministic logic should not depend on logging side effects.
+
+Logs may describe:
+
+- command sequence;
+- state transition;
+- rejection reason;
+- trade execution;
+- replay progress.
+
+Do not make domain correctness depend on log parsing.
+
+Prefer structured events for machine-consumable output.
+
+---
+
+## Persistence Boundary
+
+Do not embed PostgreSQL or unrelated persistence logic directly into the
+matching algorithm.
+
+Prefer:
+
+```text
+input command
+      ↓
+market engine
+      ↓
+domain event
+      ↓
+persistence / journal layer
+```
+
+Persistence strategy may evolve separately from matching semantics.
+
+The matching engine should remain testable in memory.
+
+---
+
+## External Integration Boundary
+
+The C++ market domain should not know how:
+
+- Stripe works;
+- a ticket transfers;
+- CrowdVolt renders HTML;
+- Shotgun represents tickets;
+- user KYC operates;
+- notifications are delivered.
+
+Where business systems need to interact with the market domain, use
+narrow explicit interfaces.
+
+---
+
+## Scope Discipline
+
+Do not introduce architectural components merely because financial
+exchanges commonly use them.
+
+Live Tape is not currently an HFT venue.
+
+Do not assume we need:
+
+- multicast;
+- kernel bypass;
+- FIX;
+- custom binary protocols;
+- shared-memory IPC;
+- replication clusters;
+- nanosecond timestamps;
+- specialized networking hardware.
+
+These may be researched later only if product requirements justify them.
+
+The current C++ value is primarily:
+
+- deterministic market modeling;
+- correctness;
+- replay;
+- simulation;
+- experimentation.
+
+---
+
+## Documentation Impact
+
+If C++ experimentation produces durable project knowledge, update the
+canonical documentation.
+
+Examples include:
+
+- historical snapshots are insufficient for a simulation;
+- auction mechanics materially outperform continuous matching;
+- replay schema needs additional state;
+- an assumed invariant proves invalid;
+- a data field required by the simulator is not collected.
+
+Do not leave durable architecture conclusions only in:
+
+- source comments;
+- benchmark notes;
+- AI conversations.
+
+Update the appropriate:
+
+- architecture document;
+- decision log;
+- open question;
+- current-state document;
+- experiment record.

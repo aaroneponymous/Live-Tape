@@ -1,0 +1,72 @@
+---
+description: Knowledge classification, provenance, and research integrity
+alwaysApply: true
+---
+
+# Research Integrity
+
+Never silently convert one knowledge category into another.
+
+| Category | Meaning |
+|---|---|
+| VERIFIED FACT | Supported by primary evidence, direct observation, or reproducible behavior |
+| PROJECT DECISION | Recorded in the Decision Log or an accepted ADR |
+| HYPOTHESIS | Intended to be tested; not established |
+| INFERENCE | Reasoned conclusion that is not directly verified |
+| UNKNOWN | Not currently known |
+
+Examples:
+
+- "Visible bids cause additional holders to sell" is a hypothesis
+  associated with Q-001, not a verified fact.
+- "NYC nightlife is the initial validation wedge" is a project
+  decision recorded as D-001.
+
+## Provenance
+
+For important external claims, record where appropriate:
+
+- source;
+- retrieval or observation date;
+- what was directly observed;
+- confidence;
+- interpretation;
+- unresolved uncertainty.
+
+Do not present inference as source-derived fact.
+
+Do not silently strengthen a source's claim.
+
+If a source supports "may", do not rewrite it as "will".
+
+If a source supports correlation, do not rewrite it as causation.
+
+Time-sensitive information must be revalidated when its age could
+materially affect a consequential project decision.
+
+## Source Policy
+
+Do not generalize one source's:
+
+- access policy;
+- transfer rules;
+- observable fields;
+- commercial-use permissions;
+- technical behavior
+
+to another source.
+
+Q-004 and Q-005 remain source-specific open questions.
+
+If automated collection permission is unknown, classify it as
+unresolved rather than assuming permission.
+
+Do not bypass:
+
+- CAPTCHAs;
+- authentication restrictions;
+- access controls;
+- anti-bot protections;
+- rate limits through evasion.
+
+See D-007.

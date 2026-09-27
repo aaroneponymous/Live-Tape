@@ -1,0 +1,92 @@
+---
+description: Live Tape project stage, documentation authority, and current implementation boundaries
+alwaysApply: true
+---
+
+# Project State
+
+The repository is the canonical source of truth.
+
+Do not treat chats, model memory, brainstorming, or unstored
+conclusions as authoritative project state.
+
+Before substantial work, consult:
+
+1. `docs/00_PROJECT_CHARTER.md`
+2. `docs/01_CURRENT_STATE.md`
+3. `docs/02_DECISION_LOG.md`
+4. `docs/03_OPEN_QUESTIONS.md`
+5. `docs/04_ROADMAP.md`
+6. relevant domain documentation for the task
+
+If repository documentation conflicts with conversational assumptions,
+surface the conflict before proceeding.
+
+## Current Stage
+
+RESEARCH / VALIDATION / DATA-INFRASTRUCTURE.
+
+Current technical priority:
+
+**Historical event and market-data collection.**
+
+Do not build production exchange infrastructure that depends on
+unvalidated marketplace assumptions.
+
+Out of current implementation priority:
+
+- production matching infrastructure;
+- production payments or financial settlement;
+- native ticket custody;
+- broker APIs;
+- sports-market infrastructure;
+- HFT optimization;
+- automated primary-ticket purchasing.
+
+Research prototypes and simulations are allowed only when explicitly
+scoped as experiments.
+
+## Documentation Discipline
+
+Chats are temporary.
+
+Persist durable project knowledge in canonical documentation.
+
+When durable knowledge changes:
+
+- current project understanding → `docs/01_CURRENT_STATE.md`
+- accepted project choice → `docs/02_DECISION_LOG.md`
+- unresolved question changes → `docs/03_OPEN_QUESTIONS.md`
+- project sequencing changes → `docs/04_ROADMAP.md`
+- domain-specific knowledge → relevant domain document
+
+Prefer updating an existing canonical document.
+
+Do not create competing files such as:
+
+- `*-final.md`
+- `*-v2.md`
+- `*-new.md`
+- `*-updated.md`
+
+unless historical versioning is explicitly required.
+
+Do not silently overturn accepted decisions.
+
+If evidence challenges an accepted decision:
+
+1. identify the existing decision;
+2. state the conflicting evidence;
+3. recommend whether the decision should be reopened;
+4. do not treat the replacement as canonical until accepted.
+
+## Completion Reporting
+
+After substantial work report:
+
+1. what changed;
+2. files changed;
+3. validation performed;
+4. assumptions made;
+5. unresolved risks;
+6. documentation affected.

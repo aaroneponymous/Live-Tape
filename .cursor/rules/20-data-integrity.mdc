@@ -1,0 +1,133 @@
+---
+description: Immutable snapshots, append-only observations, and data provenance
+globs:
+  - "apps/collector/**"
+  - "packages/schemas/**"
+  - "packages/source-adapters/**"
+  - "packages/normalization/**"
+  - "packages/diff-engine/**"
+  - "analytics/**"
+  - "replay/**"
+alwaysApply: false
+---
+
+# Data Integrity
+
+Engineering priorities for historical data infrastructure:
+
+1. correctness;
+2. determinism;
+3. provenance;
+4. testability;
+5. observability;
+6. recoverability;
+7. simplicity;
+8. maintainability;
+9. performance.
+
+Do not optimize for hypothetical scale.
+
+## Raw Snapshot Invariant
+
+Raw snapshots are immutable evidence (D-004).
+
+Preserve source evidence separately from normalized representations,
+including where applicable:
+
+- raw HTML;
+- screenshots;
+- capture metadata;
+- source URL;
+- capture timestamp;
+- content hashes.
+
+Parser changes must produce new interpretations.
+
+Never overwrite or mutate the original source capture in order to make
+new parser output appear correct.
+
+## Observation Invariant
+
+Observations are append-only (D-005).
+
+A newer:
+
+- price;
+- bid;
+- ask;
+- listing count;
+- availability state;
+- event state
+
+creates a new observation rather than replacing historical evidence.
+
+Every normalized observation must remain traceable to:
+
+- source;
+- raw snapshot;
+- capture metadata;
+- parser or normalization version where appropriate.
+
+## Do Not Invent Precision
+
+Browser snapshots represent **observed state**.
+
+They are not necessarily the source marketplace's complete underlying
+event stream.
+
+Q-009 remains open.
+
+Do not infer exact:
+
+- order-entry time;
+- cancellation time;
+- trade time;
+- intermediate book changes
+
+unless those facts were actually observed.
+
+Distinguish where appropriate:
+
+- `observed_at`
+- `source_event_at`
+
+A missing `source_event_at` is preferable to a fabricated timestamp.
+
+## Identity Is Not Yet Settled
+
+Cross-source event identity remains open under Q-007.
+
+Instrument equivalence remains open under Q-008.
+
+Do not silently collapse source records into one canonical event or
+instrument without an explicit documented normalization rule.
+
+Preserve source identity even after canonical mappings are introduced.
+
+## Storage Roles
+
+- PostgreSQL → entities, observations, provenance, capture metadata
+- Object storage → immutable raw HTML, screenshots, raw artifacts
+- Parquet / DuckDB → analytical history and research queries
+
+These are architectural roles, not a prohibition against justified
+future changes.
+
+## Examples
+
+```text
+BAD:
+UPDATE observations SET ask = 8000 WHERE event_id = ...
+
+GOOD:
+INSERT a new observation.
+The previous observed ask remains historical evidence.
+
+
+BAD:
+Overwrite snapshot.html after improving a parser.
+
+GOOD:
+Keep the original snapshot.
+Run the new parser against the same snapshot and create a new
+normalized interpretation.

@@ -1,0 +1,501 @@
+---
+description: TypeScript conventions for collector, adapters, and application infrastructure
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.mjs"
+  - "**/*.cjs"
+alwaysApply: false
+---
+
+# TypeScript
+
+TypeScript owns Live Tape application and data-collection infrastructure.
+
+Primary responsibilities include:
+
+- browser orchestration;
+- scheduling;
+- source adapters;
+- ingestion;
+- normalization;
+- operational APIs;
+- admin tooling;
+- replay export tooling.
+
+Do not place production:
+
+- order-book logic;
+- matching;
+- auction mechanics;
+- deterministic market-engine core
+
+in TypeScript when that responsibility belongs to
+`cpp/matching-engine/` under D-006.
+
+This does not prohibit TypeScript research prototypes when explicitly
+scoped as experiments.
+
+TypeScript may own replay preparation and export, such as transforming
+historical observations into a stable replay format consumed by the
+future C++ simulator or matching engine.
+
+---
+
+## Package Boundaries
+
+Prefer clear package responsibilities.
+
+Conceptually:
+
+```text
+schemas
+   ↓
+source-adapters
+   ↓
+normalization
+   ↓
+diff-engine
+   ↓
+replay export / analytics
+```
+
+These arrows represent conceptual data flow, not permission for
+unnecessary coupling.
+
+### `packages/schemas`
+
+Owns shared data contracts and canonical domain types.
+
+Examples include:
+
+- source identifiers;
+- raw capture metadata;
+- canonical event types;
+- instrument types;
+- market observations;
+- normalized price representations;
+- replay schemas.
+
+Schema definitions should make units, optionality, timestamps, and
+identity semantics explicit.
+
+Do not encode source-specific DOM structures in canonical schemas.
+
+---
+
+### `packages/source-adapters`
+
+Owns source-specific:
+
+- discovery;
+- navigation;
+- extraction;
+- parsing;
+- selectors;
+- source identifiers;
+- page-specific behavior.
+
+Source-specific HTML, DOM, or browser behavior must remain inside the
+adapter where practical.
+
+Adapters should produce structured source-domain output rather than
+directly writing canonical project entities when a normalization step
+is required.
+
+Do not allow one source adapter to depend on another source adapter's
+implementation details.
+
+---
+
+### `packages/normalization`
+
+Transforms source-specific representations into canonical Live Tape
+representations.
+
+Normalization must not depend directly on arbitrary source-specific DOM
+structures.
+
+Normalization should receive structured adapter output.
+
+It should:
+
+- preserve provenance;
+- preserve source identity;
+- represent uncertainty explicitly;
+- avoid inventing missing values;
+- apply only documented canonicalization rules.
+
+Cross-source event identity and ticket-class equivalence remain open
+research questions under Q-007 and Q-008.
+
+Do not silently merge distinct source entities into one canonical event
+or instrument unless an explicit documented rule permits it.
+
+---
+
+### `packages/diff-engine`
+
+Compares normalized observations or market states.
+
+It should not:
+
+- navigate websites;
+- scrape pages;
+- own source-specific selectors;
+- perform source authentication;
+- mutate raw snapshots.
+
+Its responsibility is comparison and change detection between
+structured states.
+
+Examples include:
+
+- bid changes;
+- ask changes;
+- depth changes;
+- status transitions;
+- listing-count changes;
+- material market-state changes.
+
+---
+
+### Replay Export
+
+TypeScript may own replay preparation and export.
+
+For example:
+
+```text
+PostgreSQL / normalized observations
+        ↓
+TypeScript replay exporter
+        ↓
+replay.jsonl / replay.parquet
+        ↓
+C++ replay simulator
+```
+
+Replay-export tooling must preserve the distinction between:
+
+- observed snapshot state;
+- actual source event-time data;
+- synthetic events generated for simulation.
+
+Do not manufacture order-by-order history from periodic snapshots.
+
+See Q-009.
+
+---
+
+## Correctness
+
+Prefer:
+
+- explicit domain types;
+- explicit service boundaries;
+- deterministic parser functions;
+- structured error types;
+- exhaustive state handling where practical;
+- pure transformations for parsing and normalization where practical.
+
+Do not guess required domain data.
+
+If required information is missing:
+
+- represent it explicitly as unknown when the schema allows it; or
+- fail explicitly with a structured error.
+
+Do not substitute misleading defaults.
+
+Example:
+
+```typescript
+// BAD
+const price = Number(raw.ask) || 0;
+
+// GOOD
+const ask = parseMoney(raw.ask);
+
+if (ask == null) {
+  throw new NormalizationError("ask missing or unparseable", {
+    source: raw.source,
+    snapshotId: raw.snapshotId,
+  });
+}
+```
+
+Zero is a valid monetary value and must never be used as an implicit
+"unknown" sentinel.
+
+---
+
+## Monetary Values
+
+Do not use floating-point values as the authoritative monetary
+representation.
+
+Prefer integer minor units where appropriate.
+
+Example:
+
+```typescript
+type PriceCents = number;
+```
+
+Prefer stronger domain types when useful:
+
+```typescript
+type PriceCents = number & {
+  readonly __brand: "PriceCents";
+};
+```
+
+The canonical schema must make monetary units explicit.
+
+Avoid ambiguous fields such as:
+
+```typescript
+price: number;
+```
+
+Prefer:
+
+```typescript
+priceCents: PriceCents;
+```
+
+or another clearly documented minor-unit representation.
+
+---
+
+## Time Semantics
+
+Timestamps must have explicit meaning.
+
+Distinguish where applicable:
+
+- capture time;
+- observation time;
+- source event time;
+- event start time;
+- parser execution time.
+
+Do not use one timestamp field for multiple semantics.
+
+Prefer names such as:
+
+```typescript
+observedAt
+capturedAt
+sourceEventAt
+eventStartsAt
+```
+
+When source event time is unknown, preserve that uncertainty rather
+than substituting observation time.
+
+---
+
+## Provenance
+
+Preserve provenance identifiers through every transformation.
+
+A normalized observation should remain traceable to:
+
+- source;
+- external source entity;
+- raw snapshot;
+- capture metadata;
+- parser version where applicable.
+
+Do not detach normalized data from the evidence from which it was
+derived.
+
+Successfully persisted raw captures are immutable under D-004.
+
+Observations are append-only under D-005.
+
+Parser changes may produce new interpretations of old snapshots, but
+must not mutate the original evidence.
+
+---
+
+## Parser Design
+
+Prefer deterministic parsing.
+
+Given the same:
+
+- raw snapshot;
+- parser version;
+- configuration
+
+the parser should produce equivalent structured output.
+
+Avoid hidden dependencies on:
+
+- current wall-clock time;
+- network state;
+- mutable process-global state;
+- unrelated database state.
+
+Separate:
+
+```text
+capture
+↓
+parse
+↓
+normalize
+↓
+persist
+```
+
+where practical.
+
+A parser should ideally be testable against stored fixtures without
+launching a browser.
+
+---
+
+## Browser Collection
+
+Browser automation belongs at the collection boundary.
+
+Prefer:
+
+1. structured page data;
+2. semantic DOM;
+3. visible text;
+4. screenshot/vision fallback only when necessary.
+
+Avoid brittle selectors where a more stable semantic selector exists.
+
+Prefer:
+
+- accessible roles;
+- labels;
+- stable data attributes;
+- source IDs;
+- semantic structure.
+
+Avoid unnecessary dependence on positional selectors such as:
+
+```text
+div:nth-child(4) > div:nth-child(2)
+```
+
+when a stable alternative exists.
+
+Browser code should capture evidence first and interpretation second.
+
+---
+
+## Error Handling
+
+Do not swallow extraction or normalization failures.
+
+Prefer structured errors with useful context.
+
+Example:
+
+```typescript
+throw new ExtractionError("best ask element missing", {
+  source: "crowdvolt",
+  url,
+  snapshotId,
+  selector: BEST_ASK_SELECTOR,
+});
+```
+
+Errors should preserve enough information to:
+
+- reproduce the failure;
+- locate the source snapshot;
+- identify the parser or adapter involved;
+- distinguish transient browser failure from parser failure.
+
+Do not silently convert parser failures into empty market states.
+
+---
+
+## Source Access
+
+Do not add:
+
+- CAPTCHA solving;
+- credential circumvention;
+- authentication bypass;
+- proxy rotation intended to defeat access controls;
+- browser-fingerprint evasion;
+- anti-bot circumvention;
+- rate-limit evasion.
+
+See D-007.
+
+If a source requires unsupported or unresolved access behavior, surface
+that as a project limitation rather than implementing circumvention.
+
+---
+
+## Scope Discipline
+
+Do not introduce:
+
+- Kafka;
+- distributed queues;
+- microservices;
+- Redis;
+- custom orchestration infrastructure;
+- high-scale distributed architecture
+
+unless the current implementation requirements demonstrate a concrete
+need.
+
+Prefer the smallest architecture that satisfies the current milestone.
+
+Current priorities are correctness, provenance, and reliable historical
+capture rather than hypothetical scale.
+
+---
+
+## Testing Expectations
+
+Source parsing should be testable using stored fixtures.
+
+Where practical, add tests for:
+
+- valid extraction;
+- missing fields;
+- malformed monetary values;
+- unexpected source markup;
+- timestamp handling;
+- provenance preservation;
+- canonical normalization;
+- replay export semantics.
+
+A parser fix should include a regression fixture or test when the
+failure can be reproduced.
+
+Do not consider source-adapter work complete solely because it succeeds
+against one live page once.
+
+---
+
+## Documentation Impact
+
+If TypeScript implementation reveals durable project knowledge, update
+the relevant canonical documentation.
+
+Examples:
+
+- a source exposes fewer fields than expected;
+- a capture mechanism changes;
+- a schema assumption proves wrong;
+- normalization semantics change;
+- replay semantics change.
+
+Do not leave durable architectural knowledge only inside code comments
+or an AI conversation.
