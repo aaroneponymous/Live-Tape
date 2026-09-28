@@ -53,6 +53,13 @@ capture does not construct `RawSnapshot`. The preimage of
 Source adapters, parsing, normalization, PostgreSQL persistence,
 scheduling, and historical export are not implemented.
 
+First-source research for CrowdVolt, Shotgun, Resident Advisor, and
+DICE is recorded under `docs/research/sources/` (retrieval date
+2026-09-27). No commercial source is currently approved for automated
+historical collection. A source adapter should not begin until
+source-access feasibility is resolved for that source. Q-004 and Q-005
+remain open.
+
 The collector should eventually:
 
 - discover or receive target event pages;
