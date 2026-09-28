@@ -52,6 +52,11 @@ Do not generalize one source's policy to another.
 
 No source is currently approved for automated historical collection.
 
+Source-access enforcement is implemented through D-008 and the
+source-access registry. The registry records the current fail-closed
+answer for a named source and mode. It does not resolve whether any
+particular source permits automation.
+
 A robots.txt directive is separate from contractual permission. A page that loads in a browser is separate from authorization to automate collection.
 
 Evidence below was recorded on 2026-09-27. Detail is in `docs/research/sources/`.
@@ -111,6 +116,9 @@ Potential fields include:
 - event status.
 
 Actual availability is source dependent.
+
+Seeing a field does not authorize automated collection. Permission
+remains Q-004 and D-008.
 
 One observation does not establish reliable observability over time. The fields below were seen once on 2026-09-27. Repeated observability remains unknown. Detail is in `docs/research/sources/`.
 

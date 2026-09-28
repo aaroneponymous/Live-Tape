@@ -1,0 +1,16 @@
+export {
+  canCollect,
+  loadSourceAccessRegistry,
+  type AuthorizationBasis,
+  type CollectDecision,
+  type CollectionMode,
+  type DenyReason,
+  type LoadSourceAccessRegistryCode,
+  type LoadSourceAccessRegistryResult,
+  type SourceAccessConfigIssue,
+  type SourceAccessEntry,
+  type SourceAccessEvidence,
+  type SourceAccessReference,
+  type SourceAccessRegistry,
+  type SourceAccessStatus,
+} from "./source-access.js";

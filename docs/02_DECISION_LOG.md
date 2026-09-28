@@ -120,3 +120,64 @@ Browser/data collection does not require C++.
 Live Tape will not build mechanisms whose purpose is defeating
 CAPTCHAs, authentication restrictions, anti-bot controls, or similar
 access protections.
+
+---
+
+## D-008 — Automated Collection Uses a Central Source-Access Registry
+
+**Status:** Accepted
+
+### Decision
+
+Automated commercial-source collection must be gated through the
+central source-access registry.
+
+Collection is allowed only when the source has status `ALLOWED` and
+the requested collection mode is explicitly allowed.
+
+Missing sources, `UNKNOWN` sources, `RESTRICTED` sources, and
+ungranted modes fail closed.
+
+`ALLOWED` entries require evidence plus an explicit recognized
+`authorizationBasis`. The recognized values are:
+
+- `PUBLIC_TERMS`
+- `WRITTEN_PERMISSION`
+- `CONTRACT`
+
+The registry records a human-reviewed authorization decision and
+provenance. The loader does not independently interpret legal
+documents.
+
+BrowserCapture remains source- and permission-agnostic.
+
+Individual source approvals are configuration and evidence changes.
+They are not separate architectural D-xxx decisions.
+
+### Reasoning
+
+Q-004 requires per-source review. D-007 forbids access-control
+circumvention. TASK-004 found no approved commercial source. A central
+registry keeps that permission decision out of BrowserCapture and out
+of future adapters and schedulers.
+
+### Consequence
+
+A future orchestrator consults the registry before automated
+commercial-source collection. Collection starts only from a registry
+that loads successfully.
+
+Allowing one source does not answer Q-004 for any other source.
+
+### Does not decide
+
+This decision does not approve CrowdVolt, Shotgun, Resident Advisor,
+DICE, or any other source.
+
+It does not decide written-agreement outcomes, snapshot frequency
+(Q-006), field reliability (Q-005), or adapter design.
+
+### Revisit When
+
+The evidence fields are insufficient, or a lawful partner API needs a
+different gate.

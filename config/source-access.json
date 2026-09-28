@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "sources": {
+    "crowdvolt": {
+      "status": "RESTRICTED",
+      "allowedModes": [],
+      "evidence": {
+        "summary": "User Agreement §6.1, retrieved 2026-09-27, restricts systematic retrieval, automated use, and scraping. robots.txt Disallow: / for User-agent: * is separate. Written exception is unknown. See docs/research/sources/crowdvolt.md.",
+        "retrievedAt": "2026-09-27",
+        "references": [
+          {
+            "url": "https://www.crowdvolt.com/terms_of_service/user_agreement",
+            "repoPath": "docs/research/sources/crowdvolt.md"
+          }
+        ]
+      }
+    },
+    "resident-advisor": {
+      "status": "RESTRICTED",
+      "allowedModes": [],
+      "evidence": {
+        "summary": "Terms retrieved 2026-09-27 restrict commercial automated extraction without a written agreement, and restrict unauthorized bots, crawlers, and scrapers. No written agreement is on file. See docs/research/sources/resident-advisor.md.",
+        "retrievedAt": "2026-09-27",
+        "references": [
+          {
+            "url": "https://ra.co/terms",
+            "repoPath": "docs/research/sources/resident-advisor.md"
+          }
+        ]
+      }
+    },
+    "dice": {
+      "status": "RESTRICTED",
+      "allowedModes": [],
+      "evidence": {
+        "summary": "Researcher retrieval on 2026-09-27 recorded US Terms §8.4 crawl restriction. Whether the live page has changed is unknown; the verifier re-fetch was Cloudflare-blocked. See docs/research/sources/dice.md.",
+        "retrievedAt": "2026-09-27",
+        "references": [
+          {
+            "url": "https://dicefm.zendesk.com/hc/en-gb/articles/4412973085841-United-States-Terms-of-Use",
+            "repoPath": "docs/research/sources/dice.md"
+          }
+        ]
+      }
+    },
+    "shotgun": {
+      "status": "UNKNOWN",
+      "allowedModes": [],
+      "evidence": {
+        "summary": "US automation permission is unknown. US General Terms were not retrieved on 2026-09-27. Europe English terms must not be generalized. robots.txt Allow: / is not contractual permission. See docs/research/sources/shotgun.md.",
+        "retrievedAt": "2026-09-27",
+        "references": [
+          {
+            "url": "",
+            "repoPath": "docs/research/sources/shotgun.md"
+          }
+        ]
+      }
+    }
+  }
+}

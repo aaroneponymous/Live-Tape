@@ -1,6 +1,6 @@
 # Live Tape — Roadmap
 
-**Last Updated:** 2026-09-27
+**Last Updated:** 2026-09-28
 
 ---
 
@@ -57,12 +57,17 @@ Progress:
 - Immutable artifact storage complete.
 - Single-page browser capture complete. Capture returns an
   intermediate result and does not construct `RawSnapshot`.
-- First-source research complete. No source is currently approved
-  for automated collection.
+- First-source research complete.
+- Source-access registry complete. Automated commercial-source
+  collection fails closed unless a source and the requested mode are
+  explicitly `ALLOWED` (D-008).
 
-Source adapters, normalization, PostgreSQL persistence, and historical
-export are not implemented. No production object-storage provider has
-been selected.
+Zero sources are currently `ALLOWED`. The first approved-source
+adapter and unattended collection remain blocked.
+
+Source adapters, a scheduler, normalization, PostgreSQL persistence,
+and historical export are not implemented. No production
+object-storage provider has been selected.
 
 ---
 

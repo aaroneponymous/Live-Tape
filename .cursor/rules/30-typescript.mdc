@@ -83,6 +83,28 @@ identity semantics explicit.
 
 Do not encode source-specific DOM structures in canonical schemas.
 
+`SourceId` is an identity brand. It is not the collection-permission
+registry. That registry lives in `packages/source-access`.
+
+---
+
+### `packages/source-access`
+
+Owns source-access config parsing, validation, and collection
+authorization decisions.
+
+Future adapters and orchestrators must consult the registry before
+automated commercial-source collection. BrowserCapture must remain
+permission-agnostic.
+
+Source adapters must not maintain independent permission tables and
+must not hard-code source approval into adapter logic.
+
+Missing sources, `UNKNOWN` sources, `RESTRICTED` sources, and
+ungranted modes fail closed.
+
+See D-008.
+
 ---
 
 ### `packages/source-adapters`
@@ -434,6 +456,11 @@ Do not add:
 - rate-limit evasion.
 
 See D-007.
+
+Automated commercial-source collection is gated by the central
+source-access registry under D-008. `packages/source-access` owns that
+decision. BrowserCapture remains permission-agnostic. Do not hard-code
+source approval into adapter logic.
 
 If a source requires unsupported or unresolved access behavior, surface
 that as a project limitation rather than implementing circumvention.

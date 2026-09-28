@@ -1,7 +1,7 @@
 # Live Tape — Current State
 
 **Status:** Active  
-**Last Updated:** 2026-09-27  
+**Last Updated:** 2026-09-28  
 **Project Phase:** Research / Validation / Data Infrastructure  
 **Roadmap Phase:** Phase 1 — Historical Data Collector (in progress)
 
@@ -50,15 +50,26 @@ and hash, and the screenshot artifact reference and hash. Browser
 capture does not construct `RawSnapshot`. The preimage of
 `RawSnapshot.contentHash` remains unresolved.
 
-Source adapters, parsing, normalization, PostgreSQL persistence,
-scheduling, and historical export are not implemented.
+A central source-access registry now exists (D-008).
+`config/source-access.json` is the human-reviewable source record.
+`packages/source-access` validates that record and exposes
+`canCollect`. Collection fails closed unless a source and the
+requested mode are explicitly `ALLOWED`. The committed registry has
+zero `ALLOWED` sources. CrowdVolt, Resident Advisor, and DICE are
+`RESTRICTED`. Shotgun is `UNKNOWN`.
+
+Browser capture remains permission-agnostic. It does not consult the
+registry.
+
+No source adapter or scheduler exists yet. Parsing, normalization,
+PostgreSQL persistence, and historical export are not implemented.
+The first approved-source adapter remains blocked until a source is
+`ALLOWED`.
 
 First-source research for CrowdVolt, Shotgun, Resident Advisor, and
 DICE is recorded under `docs/research/sources/` (retrieval date
-2026-09-27). No commercial source is currently approved for automated
-historical collection. A source adapter should not begin until
-source-access feasibility is resolved for that source. Q-004 and Q-005
-remain open.
+2026-09-27). Q-004 and Q-005 remain open. The registry does not
+resolve whether any particular source permits automation.
 
 The collector should eventually:
 
