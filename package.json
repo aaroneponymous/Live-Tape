@@ -4,10 +4,12 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit --pretty false",
-    "test": "tsc --pretty false && node --test dist/schemas/src/raw-snapshot.test.js dist/artifact-storage/src/artifact-store.test.js"
+    "test": "tsc --pretty false && node --test dist/schemas/src/raw-snapshot.test.js dist/artifact-storage/src/artifact-store.test.js dist/browser-capture/src/browser-capture.test.js",
+    "install-browsers": "playwright install chromium"
   },
   "devDependencies": {
     "@types/node": "^18.19.64",
+    "playwright": "^1.55.0",
     "typescript": "^5.9.2"
   }
 }

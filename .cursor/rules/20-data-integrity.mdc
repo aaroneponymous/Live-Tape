@@ -9,6 +9,7 @@ globs:
   - "analytics/**"
   - "replay/**"
   - "packages/artifact-storage/**"
+  - "packages/browser-capture/**"
 alwaysApply: false
 ---
 

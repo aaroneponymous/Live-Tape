@@ -38,11 +38,20 @@ integrity before returning bytes. This store is a local development
 and test implementation. No production object-storage provider has
 been selected.
 
-`./scripts/verify.sh` typechecks and tests the contract and the local
-store.
+`./scripts/verify.sh` typechecks and tests the contract, the local
+store, and single-page capture.
 
-Browser capture, source adapters, parsing, normalization, PostgreSQL
-persistence, scheduling, and historical export are not implemented.
+A Playwright-based single-page capture boundary in
+`packages/browser-capture` loads an explicitly supplied absolute http
+or https URL, captures serialized HTML and a PNG screenshot, and
+persists both artifacts through ArtifactStore. The result is
+intermediate: `sourceUrl`, `capturedAt`, the HTML artifact reference
+and hash, and the screenshot artifact reference and hash. Browser
+capture does not construct `RawSnapshot`. The preimage of
+`RawSnapshot.contentHash` remains unresolved.
+
+Source adapters, parsing, normalization, PostgreSQL persistence,
+scheduling, and historical export are not implemented.
 
 The collector should eventually:
 
@@ -60,8 +69,9 @@ The collector should eventually:
 
 ## 3. Intended Data Flow
 
-The raw-snapshot contract and a local immutable artifact store exist.
-Later stages remain future work.
+The raw-snapshot contract, a local immutable artifact store, and
+single-page browser capture exist. Capture does not yet assemble
+`RawSnapshot`. Later stages remain future work.
 
 ```text
 Source
