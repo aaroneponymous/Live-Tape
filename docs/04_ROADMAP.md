@@ -1,6 +1,6 @@
 # Live Tape — Roadmap
 
-**Last Updated:** 2026-09-28
+**Last Updated:** 2026-09-30
 
 ---
 
@@ -58,16 +58,34 @@ Progress:
 - Single-page browser capture complete. Capture returns an
   intermediate result and does not construct `RawSnapshot`.
 - First-source research complete.
-- Source-access registry complete. Automated commercial-source
+- Central source-access registry complete. Automated commercial-source
   collection fails closed unless a source and the requested mode are
   explicitly `ALLOWED` (D-008).
+- CrowdVolt `browser_capture` authorization recorded (`ALLOWED`,
+  `WRITTEN_PERMISSION`; evidence
+  `docs/source-access/crowdvolt-approval-2026-09-28.md`).
+- CrowdVolt 60-minute per-event authorization constraint represented
+  (`minimumIntervalSeconds: 3600`).
+- Timing eligibility logic exists (`canCollectAt`).
 
-Zero sources are currently `ALLOWED`. The first approved-source
-adapter and unattended collection remain blocked.
+Still outstanding:
 
-Source adapters, a scheduler, normalization, PostgreSQL persistence,
-and historical export are not implemented. No production
-object-storage provider has been selected.
+- CrowdVolt source adapter.
+- Durable per-event capture history.
+- Scheduler / orchestrator.
+- Enforcement of `canCollect` / `canCollectAt` before unattended
+  capture.
+- Normalized observations.
+- Repeated authorized field-reliability testing (Q-005).
+- Five-event experiment.
+- 72-hour unattended collection.
+
+Unattended CrowdVolt collection is not enabled. Resident Advisor and
+DICE remain `RESTRICTED`. Shotgun remains `UNKNOWN`. Phase 1 is not
+complete.
+
+PostgreSQL persistence and historical export are not implemented. No
+production object-storage provider has been selected.
 
 ---
 

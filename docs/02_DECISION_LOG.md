@@ -171,11 +171,21 @@ Allowing one source does not answer Q-004 for any other source.
 
 ### Does not decide
 
-This decision does not approve CrowdVolt, Shotgun, Resident Advisor,
-DICE, or any other source.
+This decision does not itself approve CrowdVolt, Shotgun, Resident
+Advisor, DICE, or any other source. Source approval is a registry and
+evidence record, not a new D-xxx decision.
 
-It does not decide written-agreement outcomes, snapshot frequency
-(Q-006), field reliability (Q-005), or adapter design.
+Current registry status is separate from this decision. CrowdVolt
+`browser_capture` is `ALLOWED` in `config/source-access.json` under
+written permission dated 2026-09-28, with evidence in
+`docs/source-access/crowdvolt-approval-2026-09-28.md`. Resident
+Advisor and DICE remain `RESTRICTED`. Shotgun remains `UNKNOWN`.
+Those facts do not change D-008.
+
+It does not decide snapshot frequency (Q-006), field reliability
+(Q-005), or adapter design. An authorization interval stored on a
+registry entry is configuration. It is not a Q-006 decision. Capture
+history is not part of this decision.
 
 ### Revisit When
 

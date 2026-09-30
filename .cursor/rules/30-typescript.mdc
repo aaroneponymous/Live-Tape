@@ -90,15 +90,18 @@ registry. That registry lives in `packages/source-access`.
 
 ### `packages/source-access`
 
-Owns source-access config parsing, validation, and collection
-authorization decisions.
+Owns source-access config parsing, validation, authorization, and
+timing-constraint decisions.
 
-Future adapters and orchestrators must consult the registry before
-automated commercial-source collection. BrowserCapture must remain
-permission-agnostic.
+Future automated commercial-source orchestration must consult this
+package before capture. BrowserCapture remains source-agnostic and
+authorization-agnostic.
 
-Source adapters must not maintain independent permission tables and
-must not hard-code source approval into adapter logic.
+Source adapters must not maintain independent approval tables and
+must not hard-code source approval into adapter implementation.
+
+Timing history belongs to the future orchestrator and storage layer,
+not this package.
 
 Missing sources, `UNKNOWN` sources, `RESTRICTED` sources, and
 ungranted modes fail closed.
@@ -458,9 +461,11 @@ Do not add:
 See D-007.
 
 Automated commercial-source collection is gated by the central
-source-access registry under D-008. `packages/source-access` owns that
-decision. BrowserCapture remains permission-agnostic. Do not hard-code
-source approval into adapter logic.
+source-access registry under D-008. `packages/source-access` owns
+authorization and timing-constraint decisions. BrowserCapture remains
+source-agnostic and authorization-agnostic. Do not hard-code source
+approval into adapter logic. Timing history belongs to the future
+orchestrator and storage layer.
 
 If a source requires unsupported or unresolved access behavior, surface
 that as a project limitation rather than implementing circumvention.

@@ -1,11 +1,35 @@
 # CrowdVolt
 
+## Current State — 2026-09-28 onward
+
+**Status:** `ALLOWED` for `browser_capture`  
+**Authorization basis:** `WRITTEN_PERMISSION`  
+**Evidence:** `docs/source-access/crowdvolt-approval-2026-09-28.md`  
+**Related questions:** Q-004, Q-005  
+**Related decisions:** D-007, D-008
+
+**VERIFIED FACT.** Written authorization was received on 2026-09-28. The source-access registry records CrowdVolt as `ALLOWED` for `browser_capture`, with `authorizationBasis` `WRITTEN_PERMISSION`.
+
+**VERIFIED FACT.** CrowdVolt permits at most one automated capture per event every 60 minutes. The registry represents that limit as `constraints.minimumIntervalSeconds: 3600`.
+
+The written authorization is separate from the 2026-09-27 public-terms research below. D-007 still prohibits access-control circumvention. Authorization does not resolve Q-005 field reliability.
+
+This permission does not cover authenticated browser automation, purchasing, private APIs, other collection modes, or access-control circumvention.
+
+---
+
+## Historical State — 2026-09-27
+
+**Status on this date:** `RESTRICTED`, based on public-policy research. CrowdVolt was not approved for automated collection.
+
 **Retrieval date:** 2026-09-27  
-**Approval status:** Not approved for automated collection  
+**Approval status on 2026-09-27:** Not approved for automated collection  
 **Related questions:** Q-004, Q-005  
 **Related decisions:** D-001, D-007 remain accepted. This note does not add a decision.
 
-CrowdVolt is a strong permission-review candidate. It is unapproved for automated historical collection.
+The findings below are the 2026-09-27 research record. They remain historical evidence.
+
+CrowdVolt is a strong permission-review candidate. On 2026-09-27 it was unapproved for automated historical collection.
 
 ---
 
@@ -61,7 +85,7 @@ An independent verifier re-fetched that page on 2026-09-27 and found those §6.1
 
 **INFERENCE.** That wording covers the systematic historical collection Live Tape is considering. This note is not a legal opinion on enforceability.
 
-**UNKNOWN.** Whether CrowdVolt would grant a written exception.
+**UNKNOWN (as of 2026-09-27).** Whether CrowdVolt would grant a written exception. Later written permission for `browser_capture` is recorded in Current State. It does not cover other modes.
 
 ---
 
@@ -128,15 +152,17 @@ One observation does not establish reliable observability over time.
 
 **HYPOTHESIS.** If repeated snapshots were permitted, this page could support ask history, bid history, spread, visible depth, and time-to-event work.
 
-The published terms do not grant that permission. Usefulness is conditional on a later access decision that has not been made.
+The published terms, as retrieved on 2026-09-27, do not grant that permission. On that date, usefulness was conditional on a later access decision that had not been made. The later `browser_capture` authorization is recorded in Current State. It does not establish that those fields are reliably observable.
 
 ---
 
 ## Q-004 Implications
 
-Evidence of a restriction, recorded 2026-09-27. CrowdVolt is not approved for automated observation.
+Evidence of a restriction, recorded 2026-09-27. On that date, CrowdVolt was not approved for automated observation.
 
 Public reachability of the event page is separate from authorization to automate.
+
+The later `browser_capture` authorization is recorded in Current State. It does not rewrite this public-policy finding, and it does not authorize other collection modes.
 
 ---
 
@@ -148,7 +174,9 @@ Ask, the bid-button price, ticket class, and quantity were visible once. Reliabi
 
 ## Remaining Unknowns
 
-- Whether CrowdVolt would grant written research access.
+Recorded on 2026-09-27. Written permission for `browser_capture` was received on 2026-09-28 and is recorded in Current State. The other items below remain open.
+
+- Whether CrowdVolt would grant written research access. Answered only for `browser_capture`, and only within the scope in `docs/source-access/crowdvolt-approval-2026-09-28.md`. Other modes remain unauthorized.
 - Whether repeated browser capture keeps returning the live book.
 - Whether saved HTML contains the prices shown on the Buy button. This session already showed fetched prose and the button disagreeing ($53 versus $55).
 - Individual bid-row detail.

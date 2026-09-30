@@ -8,63 +8,57 @@
       ],
       "authorizationBasis": "WRITTEN_PERMISSION",
       "evidence": {
-        "summary": "CrowdVolt provided written permission for Live Tape to perform automated browser capture of approved public event-market pages. Permission received 2026-10-15. See docs/source-access/crowdvolt-approval-2026-10-15.md.",
-        "retrievedAt": "2026-10-15",
+        "summary": "CrowdVolt provided written permission on 2026-09-28 for Live Tape to perform automated browser capture of approved public event-market pages, subject to the restrictions recorded in docs/source-access/crowdvolt-approval-2026-09-28.md.",
+        "retrievedAt": "2026-09-28",
         "references": [
           {
             "url": "",
-            "repoPath": "docs/source-access/crowdvolt-approval-2026-10-15.md"
+            "repoPath": "docs/source-access/crowdvolt-approval-2026-09-28.md"
           }
         ]
+      },
+      "constraints": {
+        "minimumIntervalSeconds": 3600
       }
     },
     "resident-advisor": {
-      "status": "ALLOWED",
-      "allowedModes": [
-        "browser_capture"
-      ],
-      "authorizationBasis": "WRITTEN_PERMISSION",
+      "status": "RESTRICTED",
+      "allowedModes": [],
       "evidence": {
-        "summary": "Resident Advisor provided written permission for Live Tape to perform automated browser capture of approved public event pages for historical market-data research. Permission received 2026-10-16. See docs/source-access/resident-advisor-approval-2026-10-16.md.",
-        "retrievedAt": "2026-10-16",
+        "summary": "Terms retrieved 2026-09-27 restrict commercial automated extraction without a written agreement, and restrict unauthorized bots, crawlers, and scrapers. No written agreement is on file. See docs/research/sources/resident-advisor.md.",
+        "retrievedAt": "2026-09-27",
         "references": [
           {
-            "url": "",
-            "repoPath": "docs/source-access/resident-advisor-approval-2026-10-16.md"
+            "url": "https://ra.co/terms",
+            "repoPath": "docs/research/sources/resident-advisor.md"
           }
         ]
       }
     },
     "dice": {
-      "status": "ALLOWED",
-      "allowedModes": [
-        "browser_capture"
-      ],
-      "authorizationBasis": "WRITTEN_PERMISSION",
+      "status": "RESTRICTED",
+      "allowedModes": [],
       "evidence": {
-        "summary": "DICE provided written permission for Live Tape to perform automated browser capture of approved public event-listing pages. Permission received 2026-10-17. See docs/source-access/dice-approval-2026-10-17.md.",
-        "retrievedAt": "2026-10-17",
+        "summary": "Researcher retrieval on 2026-09-27 recorded US Terms §8.4 crawl restriction. Whether the live page has changed is unknown; the verifier re-fetch was Cloudflare-blocked. See docs/research/sources/dice.md.",
+        "retrievedAt": "2026-09-27",
         "references": [
           {
-            "url": "",
-            "repoPath": "docs/source-access/dice-approval-2026-10-17.md"
+            "url": "https://dicefm.zendesk.com/hc/en-gb/articles/4412973085841-United-States-Terms-of-Use",
+            "repoPath": "docs/research/sources/dice.md"
           }
         ]
       }
     },
     "shotgun": {
-      "status": "ALLOWED",
-      "allowedModes": [
-        "browser_capture"
-      ],
-      "authorizationBasis": "WRITTEN_PERMISSION",
+      "status": "UNKNOWN",
+      "allowedModes": [],
       "evidence": {
-        "summary": "Shotgun provided written permission for Live Tape to perform automated browser capture of approved public US event pages. Permission received 2026-10-18. See docs/source-access/shotgun-approval-2026-10-18.md.",
-        "retrievedAt": "2026-10-18",
+        "summary": "US automation permission is unknown. US General Terms were not retrieved on 2026-09-27. Europe English terms must not be generalized. robots.txt Allow: / is not contractual permission. See docs/research/sources/shotgun.md.",
+        "retrievedAt": "2026-09-27",
         "references": [
           {
             "url": "",
-            "repoPath": "docs/source-access/shotgun-approval-2026-10-18.md"
+            "repoPath": "docs/research/sources/shotgun.md"
           }
         ]
       }

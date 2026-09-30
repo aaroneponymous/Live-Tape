@@ -22,6 +22,10 @@ export type DenyReason =
   | "status_restricted"
   | "mode_not_allowed";
 
+export type TimingDenyReason =
+  | "minimum_interval_not_elapsed"
+  | "invalid_timing_context";
+
 export type SourceAccessReference = {
   readonly url: string;
   readonly repoPath: string;
@@ -33,17 +37,23 @@ export type SourceAccessEvidence = {
   readonly references: readonly SourceAccessReference[];
 };
 
+export type SourceAccessConstraints = {
+  readonly minimumIntervalSeconds: number;
+};
+
 export type SourceAccessEntry =
   | {
       readonly status: "UNKNOWN" | "RESTRICTED";
       readonly allowedModes: readonly CollectionMode[];
       readonly evidence: SourceAccessEvidence;
+      readonly constraints?: SourceAccessConstraints;
     }
   | {
       readonly status: "ALLOWED";
       readonly authorizationBasis: AuthorizationBasis;
       readonly allowedModes: readonly CollectionMode[];
       readonly evidence: SourceAccessEvidence;
+      readonly constraints?: SourceAccessConstraints;
     };
 
 export type SourceAccessRegistry = {
@@ -64,6 +74,32 @@ export type CollectDecision =
       readonly mode: string;
       readonly status: SourceAccessStatus | null;
       readonly reason: DenyReason;
+      readonly message: string;
+    };
+
+export type CollectAtContext = {
+  readonly now: string;
+  readonly lastSuccessfulCaptureAt: string | null;
+};
+
+export type CollectAtDecision =
+  | CollectDecision
+  | {
+      readonly allowed: false;
+      readonly sourceId: string;
+      readonly mode: string;
+      readonly status: "ALLOWED";
+      readonly reason: "minimum_interval_not_elapsed";
+      readonly message: string;
+      readonly retryAt: string;
+      readonly minimumIntervalSeconds: number;
+    }
+  | {
+      readonly allowed: false;
+      readonly sourceId: string;
+      readonly mode: string;
+      readonly status: "ALLOWED";
+      readonly reason: "invalid_timing_context";
       readonly message: string;
     };
 
@@ -95,18 +131,22 @@ export type LoadSourceAccessRegistryResult =
     };
 
 const ROOT_KEYS = ["version", "sources"] as const;
-const DENIED_ENTRY_KEYS = ["status", "allowedModes", "evidence"] as const;
-const ALLOWED_ENTRY_KEYS = [
+const DENIED_ENTRY_REQUIRED_KEYS = ["status", "allowedModes", "evidence"] as const;
+const ALLOWED_ENTRY_REQUIRED_KEYS = [
   "status",
   "authorizationBasis",
   "allowedModes",
   "evidence",
 ] as const;
+const ENTRY_OPTIONAL_KEYS = ["constraints"] as const;
+const CONSTRAINTS_KEYS = ["minimumIntervalSeconds"] as const;
 const EVIDENCE_KEYS = ["summary", "retrievedAt", "references"] as const;
 const REFERENCE_KEYS = ["url", "repoPath"] as const;
 
 const SOURCE_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 const RETRIEVED_AT_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const UTC_INSTANT_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/;
 const KNOWN_STATUSES = new Set<string>(["UNKNOWN", "RESTRICTED", "ALLOWED"]);
 const KNOWN_AUTHORIZATION_BASES = new Set<string>([
   "PUBLIC_TERMS",
@@ -114,6 +154,11 @@ const KNOWN_AUTHORIZATION_BASES = new Set<string>([
   "CONTRACT",
 ]);
 const KNOWN_MODES = new Set<string>(["browser_capture"]);
+
+/** ECMAScript TimeClip absolute bound (inclusive). */
+const MAX_TIME_VALUE_MS = 8_640_000_000_000_000;
+/** Latest instant parseUtcInstantMs accepts (four-digit year). */
+const LATEST_ACCEPTED_INSTANT_MS = Date.UTC(9999, 11, 31, 23, 59, 59) + 999;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -137,6 +182,40 @@ function hasExactKeys(
   let exact = true;
 
   for (const key of allowed) {
+    if (!Object.hasOwn(value, key)) {
+      issues.push(issue(joinPath(parent, key), "is required"));
+      exact = false;
+    }
+  }
+
+  for (const key of Object.getOwnPropertyNames(value)) {
+    if (!allowedSet.has(key)) {
+      issues.push(
+        issue(joinPath(parent, key), "is not part of the source-access contract"),
+      );
+      exact = false;
+    }
+  }
+
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    issues.push(issue(parent, "symbol keys are not allowed"));
+    exact = false;
+  }
+
+  return exact;
+}
+
+function hasRequiredKeysWithOptional(
+  value: Record<string, unknown>,
+  required: readonly string[],
+  optional: readonly string[],
+  parent: string,
+  issues: SourceAccessConfigIssue[],
+): boolean {
+  const allowedSet = new Set<string>([...required, ...optional]);
+  let exact = true;
+
+  for (const key of required) {
     if (!Object.hasOwn(value, key)) {
       issues.push(issue(joinPath(parent, key), "is required"));
       exact = false;
@@ -356,6 +435,63 @@ function parseEvidence(
   });
 }
 
+function parseConstraints(
+  value: unknown,
+  path: string,
+  issues: SourceAccessConfigIssue[],
+): SourceAccessConstraints | undefined {
+  if (!isRecord(value)) {
+    issues.push(issue(path, "must be an object"));
+    return undefined;
+  }
+
+  const exact = hasExactKeys(value, CONSTRAINTS_KEYS, path, issues);
+
+  let minimumIntervalSeconds: number | undefined;
+  if (Object.hasOwn(value, "minimumIntervalSeconds")) {
+    const raw = value["minimumIntervalSeconds"];
+    if (
+      typeof raw !== "number" ||
+      !Number.isSafeInteger(raw) ||
+      raw <= 0
+    ) {
+      issues.push(
+        issue(
+          joinPath(path, "minimumIntervalSeconds"),
+          "must be a positive safe integer",
+        ),
+      );
+    } else {
+      const intervalMs = raw * 1000;
+      if (!Number.isSafeInteger(intervalMs)) {
+        issues.push(
+          issue(
+            joinPath(path, "minimumIntervalSeconds"),
+            "must convert to a safe integer millisecond duration",
+          ),
+        );
+      } else if (LATEST_ACCEPTED_INSTANT_MS + intervalMs > MAX_TIME_VALUE_MS) {
+        issues.push(
+          issue(
+            joinPath(path, "minimumIntervalSeconds"),
+            "must be addable to any accepted timestamp within the JavaScript Date range",
+          ),
+        );
+      } else {
+        minimumIntervalSeconds = raw;
+      }
+    }
+  }
+
+  if (!exact || minimumIntervalSeconds === undefined) {
+    return undefined;
+  }
+
+  return Object.freeze({
+    minimumIntervalSeconds,
+  });
+}
+
 function parseAllowedModes(
   value: unknown,
   path: string,
@@ -439,9 +575,15 @@ function parseSourceEntry(
   }
 
   const status = statusValue as SourceAccessStatus;
-  const expectedKeys =
-    status === "ALLOWED" ? ALLOWED_ENTRY_KEYS : DENIED_ENTRY_KEYS;
-  const exact = hasExactKeys(value, expectedKeys, path, issues);
+  const requiredKeys =
+    status === "ALLOWED" ? ALLOWED_ENTRY_REQUIRED_KEYS : DENIED_ENTRY_REQUIRED_KEYS;
+  const exact = hasRequiredKeysWithOptional(
+    value,
+    requiredKeys,
+    ENTRY_OPTIONAL_KEYS,
+    path,
+    issues,
+  );
 
   const evidence = Object.hasOwn(value, "evidence")
     ? parseEvidence(value["evidence"], joinPath(path, "evidence"), issues)
@@ -455,6 +597,21 @@ function parseSourceEntry(
         issues,
       )
     : undefined;
+
+  let constraints: SourceAccessConstraints | undefined;
+  let constraintsValid = true;
+  if (Object.hasOwn(value, "constraints")) {
+    const parsed = parseConstraints(
+      value["constraints"],
+      joinPath(path, "constraints"),
+      issues,
+    );
+    if (parsed === undefined) {
+      constraintsValid = false;
+    } else {
+      constraints = parsed;
+    }
+  }
 
   if (status === "ALLOWED") {
     let authorizationBasis: AuthorizationBasis | undefined;
@@ -477,11 +634,22 @@ function parseSourceEntry(
 
     if (
       !exact ||
+      !constraintsValid ||
       evidence === undefined ||
       allowedModes === undefined ||
       authorizationBasis === undefined
     ) {
       return undefined;
+    }
+
+    if (constraints !== undefined) {
+      return Object.freeze({
+        status: "ALLOWED" as const,
+        authorizationBasis,
+        allowedModes: Object.freeze(allowedModes),
+        evidence,
+        constraints,
+      });
     }
 
     return Object.freeze({
@@ -492,8 +660,22 @@ function parseSourceEntry(
     });
   }
 
-  if (!exact || evidence === undefined || allowedModes === undefined) {
+  if (
+    !exact ||
+    !constraintsValid ||
+    evidence === undefined ||
+    allowedModes === undefined
+  ) {
     return undefined;
+  }
+
+  if (constraints !== undefined) {
+    return Object.freeze({
+      status,
+      allowedModes: Object.freeze(allowedModes),
+      evidence,
+      constraints,
+    });
   }
 
   return Object.freeze({
@@ -602,7 +784,7 @@ export function loadSourceAccessRegistry(
   return parseRegistry(parsed);
 }
 
-export function canCollect(
+function evaluateStaticAuthorization(
   registry: SourceAccessRegistry,
   sourceId: string,
   mode: string,
@@ -658,4 +840,205 @@ export function canCollect(
     mode: mode as CollectionMode,
     status: "ALLOWED" as const,
   });
+}
+
+export function canCollect(
+  registry: SourceAccessRegistry,
+  sourceId: string,
+  mode: string,
+): CollectDecision {
+  return evaluateStaticAuthorization(registry, sourceId, mode);
+}
+
+/**
+ * Timing-aware authorization check for a single capture target.
+ *
+ * The caller must supply `lastSuccessfulCaptureAt` for the SAME event/target.
+ * This function does not identify events and does not store capture history.
+ * It does not enable unattended collection by itself.
+ *
+ * A future unattended collector must consult both `canCollect` (or the static
+ * checks inside this function) and this timing result, using durable history
+ * the caller owns.
+ */
+export function canCollectAt(
+  registry: SourceAccessRegistry,
+  sourceId: string,
+  mode: string,
+  timingContext: CollectAtContext,
+): CollectAtDecision {
+  const staticDecision = evaluateStaticAuthorization(registry, sourceId, mode);
+  if (!staticDecision.allowed) {
+    return staticDecision;
+  }
+
+  const entry = registry.sources[sourceId];
+  if (entry === undefined || entry.status !== "ALLOWED") {
+    return staticDecision;
+  }
+
+  const minimumIntervalSeconds = entry.constraints?.minimumIntervalSeconds;
+  if (minimumIntervalSeconds === undefined) {
+    return staticDecision;
+  }
+
+  if (!isValidTimingContext(timingContext)) {
+    return Object.freeze({
+      allowed: false as const,
+      sourceId,
+      mode,
+      status: "ALLOWED" as const,
+      reason: "invalid_timing_context" as const,
+      message: `timing context for source "${sourceId}" is invalid`,
+    });
+  }
+
+  if (timingContext.lastSuccessfulCaptureAt === null) {
+    return staticDecision;
+  }
+
+  const nowMs = parseUtcInstantMs(timingContext.now);
+  const lastMs = parseUtcInstantMs(timingContext.lastSuccessfulCaptureAt);
+  if (nowMs === undefined || lastMs === undefined) {
+    return Object.freeze({
+      allowed: false as const,
+      sourceId,
+      mode,
+      status: "ALLOWED" as const,
+      reason: "invalid_timing_context" as const,
+      message: `timing context for source "${sourceId}" is invalid`,
+    });
+  }
+
+  if (lastMs > nowMs) {
+    return Object.freeze({
+      allowed: false as const,
+      sourceId,
+      mode,
+      status: "ALLOWED" as const,
+      reason: "invalid_timing_context" as const,
+      message: `timing context for source "${sourceId}" is invalid`,
+    });
+  }
+
+  const elapsedMs = nowMs - lastMs;
+  const requiredMs = minimumIntervalSeconds * 1000;
+  const retryAtMs = lastMs + requiredMs;
+  if (
+    !Number.isSafeInteger(requiredMs) ||
+    !Number.isSafeInteger(retryAtMs) ||
+    Math.abs(retryAtMs) > MAX_TIME_VALUE_MS
+  ) {
+    return Object.freeze({
+      allowed: false as const,
+      sourceId,
+      mode,
+      status: "ALLOWED" as const,
+      reason: "invalid_timing_context" as const,
+      message: `timing context for source "${sourceId}" is invalid`,
+    });
+  }
+
+  if (elapsedMs < requiredMs) {
+    return Object.freeze({
+      allowed: false as const,
+      sourceId,
+      mode,
+      status: "ALLOWED" as const,
+      reason: "minimum_interval_not_elapsed" as const,
+      message: `minimum interval of ${String(minimumIntervalSeconds)} seconds has not elapsed for source "${sourceId}"`,
+      retryAt: new Date(retryAtMs).toISOString(),
+      minimumIntervalSeconds,
+    });
+  }
+
+  return staticDecision;
+}
+
+function isValidTimingContext(value: unknown): value is CollectAtContext {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (!Object.hasOwn(value, "now") || !Object.hasOwn(value, "lastSuccessfulCaptureAt")) {
+    return false;
+  }
+
+  if (typeof value["now"] !== "string") {
+    return false;
+  }
+
+  const last = value["lastSuccessfulCaptureAt"];
+  if (last !== null && typeof last !== "string") {
+    return false;
+  }
+
+  if (parseUtcInstantMs(value["now"]) === undefined) {
+    return false;
+  }
+
+  if (last !== null && parseUtcInstantMs(last) === undefined) {
+    return false;
+  }
+
+  return true;
+}
+
+function parseUtcInstantMs(value: string): number | undefined {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return undefined;
+  }
+
+  const match = UTC_INSTANT_PATTERN.exec(value);
+  if (match === null) {
+    return undefined;
+  }
+
+  const yearText = match[1];
+  const monthText = match[2];
+  const dayText = match[3];
+  const hourText = match[4];
+  const minuteText = match[5];
+  const secondText = match[6];
+  const fractionText = match[7];
+  if (
+    yearText === undefined ||
+    monthText === undefined ||
+    dayText === undefined ||
+    hourText === undefined ||
+    minuteText === undefined ||
+    secondText === undefined
+  ) {
+    return undefined;
+  }
+
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+
+  if (hour > 23 || minute > 59 || second > 59) {
+    return undefined;
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() + 1 !== month ||
+    date.getUTCDate() !== day ||
+    date.getUTCHours() !== hour ||
+    date.getUTCMinutes() !== minute ||
+    date.getUTCSeconds() !== second
+  ) {
+    return undefined;
+  }
+
+  let millisecond = 0;
+  if (fractionText !== undefined) {
+    millisecond = Number(fractionText.padEnd(3, "0"));
+  }
+
+  return date.getTime() + millisecond;
 }

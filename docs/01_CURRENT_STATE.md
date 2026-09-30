@@ -1,7 +1,7 @@
 # Live Tape — Current State
 
 **Status:** Active  
-**Last Updated:** 2026-09-28  
+**Last Updated:** 2026-09-30  
 **Project Phase:** Research / Validation / Data Infrastructure  
 **Roadmap Phase:** Phase 1 — Historical Data Collector (in progress)
 
@@ -50,26 +50,33 @@ and hash, and the screenshot artifact reference and hash. Browser
 capture does not construct `RawSnapshot`. The preimage of
 `RawSnapshot.contentHash` remains unresolved.
 
-A central source-access registry now exists (D-008).
+A central source-access registry is active and fail-closed (D-008).
 `config/source-access.json` is the human-reviewable source record.
-`packages/source-access` validates that record and exposes
-`canCollect`. Collection fails closed unless a source and the
-requested mode are explicitly `ALLOWED`. The committed registry has
-zero `ALLOWED` sources. CrowdVolt, Resident Advisor, and DICE are
-`RESTRICTED`. Shotgun is `UNKNOWN`.
+`packages/source-access` validates that record and exposes static
+authorization (`canCollect`) and timing authorization
+(`canCollectAt`). Collection fails closed unless a source and the
+requested mode are explicitly `ALLOWED`.
 
-Browser capture remains permission-agnostic. It does not consult the
-registry.
+CrowdVolt is `ALLOWED` for `browser_capture` based on written
+permission dated 2026-09-28. Evidence is
+`docs/source-access/crowdvolt-approval-2026-09-28.md`. The registry
+records a 3600-second minimum interval per event
+(`minimumIntervalSeconds: 3600`). Resident Advisor and DICE remain
+`RESTRICTED`. Shotgun remains `UNKNOWN`.
 
-No source adapter or scheduler exists yet. Parsing, normalization,
-PostgreSQL persistence, and historical export are not implemented.
-The first approved-source adapter remains blocked until a source is
-`ALLOWED`.
+BrowserCapture remains source- and permission-agnostic. It does not
+consult the registry.
 
-First-source research for CrowdVolt, Shotgun, Resident Advisor, and
-DICE is recorded under `docs/research/sources/` (retrieval date
-2026-09-27). Q-004 and Q-005 remain open. The registry does not
-resolve whether any particular source permits automation.
+No CrowdVolt source adapter exists. No scheduler or orchestrator
+exists. Unattended CrowdVolt collection is not enabled. There is no
+durable per-event capture history, and no orchestrator enforcing the
+timing decision before each run.
+
+Parsing, normalization, PostgreSQL persistence, and historical export
+are not implemented. Q-004 and Q-005 remain open. First-source
+public-policy research is recorded under `docs/research/sources/`
+(retrieval date 2026-09-27). CrowdVolt `browser_capture` does not
+answer other sources, other CrowdVolt modes, or field reliability.
 
 The collector should eventually:
 

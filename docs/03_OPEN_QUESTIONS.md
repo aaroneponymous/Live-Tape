@@ -50,28 +50,36 @@ Each source requires independent review.
 
 Do not generalize one source's policy to another.
 
-No source is currently approved for automated historical collection.
+Q-004 remains open. CrowdVolt has a source-specific, mode-specific answer for `browser_capture`. Other sources, and other CrowdVolt modes, remain unresolved.
 
 Source-access enforcement is implemented through D-008 and the
 source-access registry. The registry records the current fail-closed
-answer for a named source and mode. It does not resolve whether any
-particular source permits automation.
+answer for a named source and mode. CrowdVolt `browser_capture` does
+not resolve Q-004 for any other source or mode.
 
-A robots.txt directive is separate from contractual permission. A page that loads in a browser is separate from authorization to automate collection.
+A robots.txt directive is separate from contractual permission. A page that loads in a browser is separate from authorization to automate collection. Public accessibility and authorization remain separate concepts.
 
-Evidence below was recorded on 2026-09-27. Detail is in `docs/research/sources/`.
+Public-policy evidence below was recorded on 2026-09-27 unless noted. Detail is in `docs/research/sources/`.
 
 ### CrowdVolt
 
-**VERIFIED FACT.** User Agreement §6.1, retrieved 2026-09-27 from `https://www.crowdvolt.com/terms_of_service/user_agreement`, restricts systematic retrieval, automated use, crawling and scraping, and bypassing robot-exclusion headers. See `docs/research/sources/crowdvolt.md`.
+**Source-specific answer, 2026-09-28 onward.** `browser_capture` is `ALLOWED`. Basis: `WRITTEN_PERMISSION`. Evidence: `docs/source-access/crowdvolt-approval-2026-09-28.md`.
+
+**VERIFIED FACT.** The minimum permitted interval is 3600 seconds per event (`constraints.minimumIntervalSeconds: 3600`).
+
+That answer does not authorize other CrowdVolt collection modes.
+
+**VERIFIED FACT.** User Agreement §6.1, retrieved 2026-09-27 from `https://www.crowdvolt.com/terms_of_service/user_agreement`, restricts systematic retrieval, automated use, crawling and scraping, and bypassing robot-exclusion headers. See `docs/research/sources/crowdvolt.md`. That public-policy record remains historical evidence. The written authorization is separate from it.
 
 **VERIFIED FACT.** `https://www.crowdvolt.com/robots.txt`, retrieved 2026-09-27, disallows `/` for User-agent `*`. That directive is not itself the contractual finding.
 
-**INFERENCE.** CrowdVolt is a strong permission-review candidate because one logged-out NYC nightlife market displayed bid/ask-style information. It is unapproved for automated collection.
+**INFERENCE.** CrowdVolt was a strong permission-review candidate because one logged-out NYC nightlife market displayed bid/ask-style information. On 2026-09-27 it was unapproved for automated collection.
 
-**UNKNOWN.** Whether CrowdVolt would grant a written exception.
+**UNKNOWN.** Whether CrowdVolt authorizes any collection mode other than `browser_capture`.
 
 ### Shotgun
+
+**Registry status:** `UNKNOWN`.
 
 **UNKNOWN.** US automation permission. The US General Terms were not retrieved on 2026-09-27. See `docs/research/sources/shotgun.md`.
 
@@ -81,6 +89,8 @@ Evidence below was recorded on 2026-09-27. Detail is in `docs/research/sources/`
 
 ### Resident Advisor
 
+**Registry status:** `RESTRICTED`.
+
 **VERIFIED FACT.** Terms retrieved 2026-09-27 from `https://ra.co/terms` restrict commercial automated extraction without a written agreement, and restrict unauthorized bots, crawlers, and scrapers. See `docs/research/sources/resident-advisor.md`.
 
 **VERIFIED FACT.** Browser-visible public listings do not constitute permission.
@@ -88,6 +98,8 @@ Evidence below was recorded on 2026-09-27. Detail is in `docs/research/sources/`
 **UNKNOWN.** Whether Resident Advisor would grant a written agreement.
 
 ### DICE
+
+**Registry status:** `RESTRICTED`.
 
 **VERIFIED FACT.** The researcher retrieved the US Terms of Use on 2026-09-27 and recorded a clause restricting crawling with scripts or web crawlers. See `docs/research/sources/dice.md`.
 
@@ -118,15 +130,20 @@ Potential fields include:
 Actual availability is source dependent.
 
 Seeing a field does not authorize automated collection. Permission
-remains Q-004 and D-008.
+remains Q-004 and D-008. Authorization does not establish that a field
+is reliably observable.
 
 One observation does not establish reliable observability over time. The fields below were seen once on 2026-09-27. Repeated observability remains unknown. Detail is in `docs/research/sources/`.
+
+CrowdVolt `browser_capture` is now authorized, so repeated observations may be used to investigate Q-005 within the approved scope and the 3600-second minimum interval. Reliability remains unproven.
 
 ### CrowdVolt
 
 Seen once, logged out, on one NYC event page: event name, time, venue, address, lineup, a Buy price of $55, a Sell price of $40, an ask ladder, ticket class, and a quantity range.
 
-Not established: face price, last trade, the full bid ladder in that session, agreement between fetched prose and the rendered button price, and stability over time.
+Not established: face price, last trade, the full bid ladder in that session, and stability over time.
+
+In that session, serialized or fetched text said the floor was “$53 right now,” while the rendered Buy button read $55. Agreement between fetched text and the rendered UI was not established.
 
 ### Shotgun
 
