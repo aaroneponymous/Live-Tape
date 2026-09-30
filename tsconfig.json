@@ -21,6 +21,7 @@
     "packages/schemas/src/**/*.ts",
     "packages/artifact-storage/src/**/*.ts",
     "packages/browser-capture/src/**/*.ts",
-    "packages/source-access/src/**/*.ts"
+    "packages/source-access/src/**/*.ts",
+    "packages/source-adapters/src/**/*.ts"
   ]
 }

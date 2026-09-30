@@ -122,6 +122,10 @@ Owns source-specific:
 - source identifiers;
 - page-specific behavior.
 
+Source-specific captured-page classification belongs in this package.
+Blocked or unconfirmed documents must not become observations.
+BrowserCapture remains source-agnostic.
+
 Source-specific HTML, DOM, or browser behavior must remain inside the
 adapter where practical.
 

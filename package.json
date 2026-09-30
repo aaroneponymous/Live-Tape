@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit --pretty false",
-    "test": "tsc --pretty false && node --test dist/schemas/src/raw-snapshot.test.js dist/artifact-storage/src/artifact-store.test.js dist/browser-capture/src/browser-capture.test.js dist/source-access/src/source-access.test.js",
+    "test": "tsc --pretty false && node --test dist/schemas/src/raw-snapshot.test.js dist/artifact-storage/src/artifact-store.test.js dist/browser-capture/src/browser-capture.test.js dist/source-access/src/source-access.test.js dist/source-adapters/src/crowdvolt/classify-captured-html.test.js",
     "install-browsers": "playwright install chromium"
   },
   "devDependencies": {

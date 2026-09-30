@@ -70,12 +70,19 @@ Progress:
 - One manual CrowdVolt `browser_capture` was stored (TASK-007). The
   artifacts are a Cloudflare block page, not an event market. See
   `docs/research/sources/crowdvolt-adapter-reconnaissance.md`.
+- CrowdVolt capture classification complete (TASK-008). The known
+  Cloudflare block shape is classified `ACCESS_BLOCKED`. Every other
+  currently unproven document is `NOT_CONFIRMED_EVENT_PAGE`. Both
+  states fail closed before market parsing.
 
 Still outstanding:
 
-- CrowdVolt source adapter. Extraction strategy is undecided until an
-  authorized capture returns the event page. A Cloudflare block must
-  fail closed, without access-control circumvention (D-007).
+- CrowdVolt market parser and positive event-page classification.
+  An authorized BrowserCapture attempt received a Cloudflare block
+  page, so positive CrowdVolt event-page classification and market
+  parsing remain blocked pending an approved technical access path
+  or a later authorized capture that actually contains the event
+  page. No access-control circumvention (D-007).
 - Durable per-event capture history.
 - Scheduler / orchestrator.
 - Enforcement of `canCollect` / `canCollectAt` before unattended

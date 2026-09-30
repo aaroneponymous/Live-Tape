@@ -147,7 +147,7 @@ In that session, serialized or fetched text said the floor was “$53 right now,
 
 **VERIFIED FACT.** On 2026-09-30 one authorized manual `browser_capture` of that same event URL stored a Cloudflare block page. The serialized HTML and the viewport screenshot agree on the block. No event, ticket-class, or market field was observed in that capture. `capturePage` still returned success. Detail is in `docs/research/sources/crowdvolt-adapter-reconnaissance.md`.
 
-That capture does not confirm the 2026-09-27 fields in `page.content()`, and it does not retest the $53 / $55 disagreement. Q-005 stays open.
+That capture does not confirm the 2026-09-27 fields in `page.content()`, and it does not retest the $53 / $55 disagreement. The authorized TASK-007 capture did not expose CrowdVolt market fields. A captured-page classifier now prevents that block page from becoming an empty or fabricated market observation. Field reliability remains unresolved. Q-005 stays open.
 
 ### Shotgun
 

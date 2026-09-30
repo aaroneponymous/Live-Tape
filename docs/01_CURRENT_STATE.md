@@ -65,19 +65,29 @@ records a 3600-second minimum interval per event
 `RESTRICTED`. Shotgun remains `UNKNOWN`.
 
 BrowserCapture remains source- and permission-agnostic. It does not
-consult the registry.
+consult the registry. BrowserCapture success does not imply a usable
+CrowdVolt page.
 
-No CrowdVolt source adapter exists. No scheduler or orchestrator
-exists. Unattended CrowdVolt collection is not enabled. One manually
-initiated CrowdVolt `browser_capture` was stored on 2026-09-30
-(`capturedAt` `2026-09-30T18:31:01.194Z`). The artifacts are a
-Cloudflare block page, not the event market. The capture time is
-recorded in `docs/research/sources/crowdvolt-adapter-reconnaissance.md`.
-There is still no orchestrator-owned per-event history enforcing the
-timing decision before each run.
+A CrowdVolt-specific captured-page classification gate now exists in
+`packages/source-adapters`. The known Cloudflare block shape is
+classified `ACCESS_BLOCKED`. Every other currently unproven document
+is `NOT_CONFIRMED_EVENT_PAGE`. Both states fail closed before market
+parsing. No valid CrowdVolt event-page HTML has yet been captured
+through the authorized BrowserCapture path. No CrowdVolt market
+parser exists yet.
 
-Parsing, normalization, PostgreSQL persistence, and historical export
-are not implemented. Q-004 and Q-005 remain open. First-source
+No scheduler or orchestrator exists. Unattended CrowdVolt collection
+is not enabled. One manually initiated CrowdVolt `browser_capture`
+was stored on 2026-09-30 (`capturedAt`
+`2026-09-30T18:31:01.194Z`). The artifacts are a Cloudflare block
+page, not the event market. Captured block evidence remains
+preserved. The capture time is recorded in
+`docs/research/sources/crowdvolt-adapter-reconnaissance.md`. There is
+still no orchestrator-owned per-event history enforcing the timing
+decision before each run.
+
+Market parsing, normalization, PostgreSQL persistence, and historical
+export are not implemented. Q-004 and Q-005 remain open. First-source
 public-policy research is recorded under `docs/research/sources/`
 (retrieval date 2026-09-27). CrowdVolt `browser_capture` does not
 answer other sources, other CrowdVolt modes, or field reliability.
