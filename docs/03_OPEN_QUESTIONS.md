@@ -139,11 +139,15 @@ CrowdVolt `browser_capture` is now authorized, so repeated observations may be u
 
 ### CrowdVolt
 
-Seen once, logged out, on one NYC event page: event name, time, venue, address, lineup, a Buy price of $55, a Sell price of $40, an ask ladder, ticket class, and a quantity range.
+Seen once, logged out, on 2026-09-27, on one NYC event page: event name, time, venue, address, lineup, a Buy price of $55, a Sell price of $40, an ask ladder, ticket class, and a quantity range.
 
 Not established: face price, last trade, the full bid ladder in that session, and stability over time.
 
 In that session, serialized or fetched text said the floor was “$53 right now,” while the rendered Buy button read $55. Agreement between fetched text and the rendered UI was not established.
+
+**VERIFIED FACT.** On 2026-09-30 one authorized manual `browser_capture` of that same event URL stored a Cloudflare block page. The serialized HTML and the viewport screenshot agree on the block. No event, ticket-class, or market field was observed in that capture. `capturePage` still returned success. Detail is in `docs/research/sources/crowdvolt-adapter-reconnaissance.md`.
+
+That capture does not confirm the 2026-09-27 fields in `page.content()`, and it does not retest the $53 / $55 disagreement. Q-005 stays open.
 
 ### Shotgun
 

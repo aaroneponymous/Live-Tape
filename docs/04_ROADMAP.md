@@ -67,10 +67,15 @@ Progress:
 - CrowdVolt 60-minute per-event authorization constraint represented
   (`minimumIntervalSeconds: 3600`).
 - Timing eligibility logic exists (`canCollectAt`).
+- One manual CrowdVolt `browser_capture` was stored (TASK-007). The
+  artifacts are a Cloudflare block page, not an event market. See
+  `docs/research/sources/crowdvolt-adapter-reconnaissance.md`.
 
 Still outstanding:
 
-- CrowdVolt source adapter.
+- CrowdVolt source adapter. Extraction strategy is undecided until an
+  authorized capture returns the event page. A Cloudflare block must
+  fail closed, without access-control circumvention (D-007).
 - Durable per-event capture history.
 - Scheduler / orchestrator.
 - Enforcement of `canCollect` / `canCollectAt` before unattended

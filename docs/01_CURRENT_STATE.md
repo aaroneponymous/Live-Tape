@@ -68,8 +68,12 @@ BrowserCapture remains source- and permission-agnostic. It does not
 consult the registry.
 
 No CrowdVolt source adapter exists. No scheduler or orchestrator
-exists. Unattended CrowdVolt collection is not enabled. There is no
-durable per-event capture history, and no orchestrator enforcing the
+exists. Unattended CrowdVolt collection is not enabled. One manually
+initiated CrowdVolt `browser_capture` was stored on 2026-09-30
+(`capturedAt` `2026-09-30T18:31:01.194Z`). The artifacts are a
+Cloudflare block page, not the event market. The capture time is
+recorded in `docs/research/sources/crowdvolt-adapter-reconnaissance.md`.
+There is still no orchestrator-owned per-event history enforcing the
 timing decision before each run.
 
 Parsing, normalization, PostgreSQL persistence, and historical export

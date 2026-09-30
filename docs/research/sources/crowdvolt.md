@@ -16,6 +16,8 @@ The written authorization is separate from the 2026-09-27 public-terms research 
 
 This permission does not cover authenticated browser automation, purchasing, private APIs, other collection modes, or access-control circumvention.
 
+**VERIFIED FACT.** On 2026-09-30 one manually initiated `browser_capture` of `https://www.crowdvolt.com/event/jamie-jones-pacha-new-york-brooklyn-new-york-october-10-2026` was stored through BrowserCapture and ArtifactStore. `capturedAt` is `2026-09-30T18:31:01.194Z`. The stored HTML and viewport screenshot are a Cloudflare block page, not the event market. Field detail is in `docs/research/sources/crowdvolt-adapter-reconnaissance.md`. Another capture of this URL before `2026-09-30T19:31:01.194Z` would violate the 3600-second limit.
+
 ---
 
 ## Historical State — 2026-09-27
@@ -168,7 +170,9 @@ The later `browser_capture` authorization is recorded in Current State. It does 
 
 ## Q-005 Implications
 
-Ask, the bid-button price, ticket class, and quantity were visible once. Reliability across time is unknown. The full bid ladder was not confirmed in this pass.
+Ask, the bid-button price, ticket class, and quantity were visible once on 2026-09-27. Reliability across time is unknown. The full bid ladder was not confirmed in that pass.
+
+The 2026-09-30 `browser_capture` did not reproduce those fields. It stored a Cloudflare block. Q-005 remains open. See `docs/research/sources/crowdvolt-adapter-reconnaissance.md`.
 
 ---
 
@@ -177,8 +181,8 @@ Ask, the bid-button price, ticket class, and quantity were visible once. Reliabi
 Recorded on 2026-09-27. Written permission for `browser_capture` was received on 2026-09-28 and is recorded in Current State. The other items below remain open.
 
 - Whether CrowdVolt would grant written research access. Answered only for `browser_capture`, and only within the scope in `docs/source-access/crowdvolt-approval-2026-09-28.md`. Other modes remain unauthorized.
-- Whether repeated browser capture keeps returning the live book.
-- Whether saved HTML contains the prices shown on the Buy button. This session already showed fetched prose and the button disagreeing ($53 versus $55).
+- Whether repeated browser capture keeps returning the live book. One headless BrowserCapture on 2026-09-30 stored a Cloudflare block rather than the book. Whether a later capture returns the event page remains unknown. D-007 still forbids circumvention.
+- Whether saved HTML from a capture of the event page contains the prices shown on the Buy button. The 2026-09-27 session showed fetched prose and the button disagreeing ($53 versus $55). The 2026-09-30 `browser_capture` did not reach the event page, so it does not resolve that disagreement.
 - Individual bid-row detail.
 - Face price and last transaction.
 - Legal effect beyond the quoted clauses.
