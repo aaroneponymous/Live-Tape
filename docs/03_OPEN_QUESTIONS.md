@@ -174,6 +174,10 @@ Not established: bid, ask, depth, last trade, and stability over time.
 **Priority:** Medium  
 **Status:** Open
 
+CrowdVolt `minimumIntervalSeconds` of 3600 is an authorization
+constraint (D-009). It does not answer the product and research
+question of optimal snapshot cadence.
+
 Need evidence regarding:
 
 - market-change frequency;

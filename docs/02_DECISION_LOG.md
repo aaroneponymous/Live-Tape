@@ -191,3 +191,68 @@ history is not part of this decision.
 
 The evidence fields are insufficient, or a lawful partner API needs a
 different gate.
+
+---
+
+## D-009 — Capture Interval Is Measured From the Attempt Claim
+
+**Status:** Accepted
+
+### Decision
+
+The minimum capture interval for an automated commercial-source
+`browser_capture` is measured from a durable capture-attempt claim
+made before a request can be sent, not from successful navigation,
+successful evidence persistence, page classification, parser success,
+or market-observation creation.
+
+For CrowdVolt, the existing 3600-second per-event interval therefore
+remains consumed after outcomes including:
+
+- `ACCESS_BLOCKED`;
+- `NOT_CONFIRMED_EVENT_PAGE`;
+- navigation failure where request delivery is uncertain;
+- HTML or screenshot capture failure after navigation;
+- artifact persistence failure;
+- parser failure;
+- no market observation;
+- process failure after the attempt claim became durable.
+
+The future orchestrator must:
+
+1. successfully read prior attempt history;
+2. fail closed if history cannot be read;
+3. call `canCollectAt` with the prior claim, or with `null` only after
+   a successful absence read;
+4. durably write the new claim before `capturePage`;
+5. not call `capturePage` if the claim write fails.
+
+A definitively pre-request `invalid_url` outcome may permit a future
+orchestrator to restore the previous claim.
+
+### Reasoning
+
+A blocked or failed attempt can still have sent a source request.
+Measuring the interval from capture success, page classification, or
+a market observation would allow another automated attempt immediately
+after a request that may already have occurred.
+
+### Consequence
+
+`packages/source-access` answers the interval from a supplied
+`lastCaptureAttemptAt` and stores no history. Exact interval equality
+allows. For a constrained source, a malformed, missing, or future
+attempt timestamp fails closed. Durable claims belong to a future
+orchestrator and storage layer.
+
+### Does not decide
+
+This decision does not define snapshot frequency (Q-006). It does not
+introduce a scheduler. It does not introduce durable history storage.
+It does not change the CrowdVolt 3600-second value. It does not alter
+D-007 or D-008.
+
+### Revisit When
+
+A source's written authorization requires a different attempt
+boundary, or the CrowdVolt interval itself changes.

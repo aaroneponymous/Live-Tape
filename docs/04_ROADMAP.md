@@ -1,6 +1,6 @@
 # Live Tape — Roadmap
 
-**Last Updated:** 2026-09-30
+**Last Updated:** 2026-10-03
 
 ---
 
@@ -66,7 +66,11 @@ Progress:
   `docs/source-access/crowdvolt-approval-2026-09-28.md`).
 - CrowdVolt 60-minute per-event authorization constraint represented
   (`minimumIntervalSeconds: 3600`).
-- Timing eligibility logic exists (`canCollectAt`).
+- Capture timing distinguishes an attempt claim from capture success
+  and from market-observation success (TASK-009, D-009).
+  `canCollectAt` consumes `lastCaptureAttemptAt`. The CrowdVolt
+  60-minute gate is safe for blocked and failed capture outcomes at
+  the API-contract level. The 3600-second value is unchanged.
 - One manual CrowdVolt `browser_capture` was stored (TASK-007). The
   artifacts are a Cloudflare block page, not an event market. See
   `docs/research/sources/crowdvolt-adapter-reconnaissance.md`.
@@ -83,10 +87,8 @@ Still outstanding:
   parsing remain blocked pending an approved technical access path
   or a later authorized capture that actually contains the event
   page. No access-control circumvention (D-007).
-- Durable per-event capture history.
-- Scheduler / orchestrator.
-- Enforcement of `canCollect` / `canCollectAt` before unattended
-  capture.
+- Durable per-target capture-attempt history and orchestration are
+  not yet implemented.
 - Normalized observations.
 - Repeated authorized field-reliability testing (Q-005).
 - Five-event experiment.

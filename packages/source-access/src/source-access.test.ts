@@ -680,16 +680,18 @@ test("CrowdVolt canCollectAt enforces the 60-minute written permission interval"
   const registry = requireRegistry(
     loadSourceAccessRegistry(COMMITTED_CONFIG_PATH),
   );
+  assert.equal(canCollectAt.length, 4);
+  assert.equal(3_600_000, 60 * 60 * 1000);
 
   const first = canCollectAt(registry, "crowdvolt", "browser_capture", {
     now: ANCHOR,
-    lastSuccessfulCaptureAt: null,
+    lastCaptureAttemptAt: null,
   });
   assert.equal(first.allowed, true);
 
   const denied59 = canCollectAt(registry, "crowdvolt", "browser_capture", {
     now: offsetIso(ANCHOR, 59 * 60 * 1000),
-    lastSuccessfulCaptureAt: ANCHOR,
+    lastCaptureAttemptAt: ANCHOR,
   });
   assert.equal(denied59.allowed, false);
   if (denied59.allowed) {
@@ -707,22 +709,48 @@ test("CrowdVolt canCollectAt enforces the 60-minute written permission interval"
 
   const denied5999 = canCollectAt(registry, "crowdvolt", "browser_capture", {
     now: offsetIso(ANCHOR, 59 * 60 * 1000 + 59 * 1000),
-    lastSuccessfulCaptureAt: ANCHOR,
+    lastCaptureAttemptAt: ANCHOR,
   });
   assert.equal(denied5999.allowed, false);
   if (!denied5999.allowed && denied5999.reason === "minimum_interval_not_elapsed") {
     assert.equal(denied5999.retryAt, "2026-09-28T13:00:00.000Z");
   }
 
+  const deniedOneMillisecondShort = canCollectAt(
+    registry,
+    "crowdvolt",
+    "browser_capture",
+    {
+      now: offsetIso(ANCHOR, 3_599_999),
+      lastCaptureAttemptAt: ANCHOR,
+    },
+  );
+  assert.equal(deniedOneMillisecondShort.allowed, false);
+  if (
+    !deniedOneMillisecondShort.allowed &&
+    deniedOneMillisecondShort.reason === "minimum_interval_not_elapsed"
+  ) {
+    assert.equal(deniedOneMillisecondShort.retryAt, "2026-09-28T13:00:00.000Z");
+    assert.equal(deniedOneMillisecondShort.minimumIntervalSeconds, 3600);
+  } else {
+    assert.fail("expected minimum_interval_not_elapsed");
+  }
+
+  const exactlyIntervalMs = canCollectAt(registry, "crowdvolt", "browser_capture", {
+    now: offsetIso(ANCHOR, 3_600_000),
+    lastCaptureAttemptAt: ANCHOR,
+  });
+  assert.equal(exactlyIntervalMs.allowed, true);
+
   const exactly60 = canCollectAt(registry, "crowdvolt", "browser_capture", {
     now: offsetIso(ANCHOR, 60 * 60 * 1000),
-    lastSuccessfulCaptureAt: ANCHOR,
+    lastCaptureAttemptAt: ANCHOR,
   });
   assert.equal(exactly60.allowed, true);
 
   const after60 = canCollectAt(registry, "crowdvolt", "browser_capture", {
     now: offsetIso(ANCHOR, 60 * 60 * 1000 + 1000),
-    lastSuccessfulCaptureAt: ANCHOR,
+    lastCaptureAttemptAt: ANCHOR,
   });
   assert.equal(after60.allowed, true);
 });
@@ -732,8 +760,14 @@ test("static denials precede timing checks for canCollectAt", () => {
     {
       version: 1,
       sources: {
-        "fixture-restricted": restrictedEntry(),
-        "fixture-unknown": unknownEntry(),
+        "fixture-restricted": {
+          ...restrictedEntry(),
+          constraints: { minimumIntervalSeconds: 3600 },
+        },
+        "fixture-unknown": {
+          ...unknownEntry(),
+          constraints: { minimumIntervalSeconds: 3600 },
+        },
       },
     },
     (configPath) => {
@@ -745,7 +779,7 @@ test("static denials precede timing checks for canCollectAt", () => {
         "browser_capture",
         {
           now: ANCHOR,
-          lastSuccessfulCaptureAt: null,
+          lastCaptureAttemptAt: null,
         },
       );
       assert.equal(restrictedEligible.allowed, false);
@@ -759,7 +793,7 @@ test("static denials precede timing checks for canCollectAt", () => {
         "browser_capture",
         {
           now: offsetIso(ANCHOR, 1000),
-          lastSuccessfulCaptureAt: ANCHOR,
+          lastCaptureAttemptAt: ANCHOR,
         },
       );
       assert.equal(restrictedIneligible.allowed, false);
@@ -773,12 +807,45 @@ test("static denials precede timing checks for canCollectAt", () => {
         "browser_capture",
         {
           now: ANCHOR,
-          lastSuccessfulCaptureAt: null,
+          lastCaptureAttemptAt: null,
         },
       );
       assert.equal(unknownDecision.allowed, false);
       if (!unknownDecision.allowed) {
         assert.equal(unknownDecision.reason, "status_unknown");
+      }
+
+      const restrictedMissingTiming = canCollectAt(
+        registry,
+        "fixture-restricted",
+        "browser_capture",
+        { now: "not-a-timestamp" } as unknown as {
+          now: string;
+          lastCaptureAttemptAt: string | null;
+        },
+      );
+      assert.equal(restrictedMissingTiming.allowed, false);
+      if (!restrictedMissingTiming.allowed) {
+        assert.equal(restrictedMissingTiming.reason, "status_restricted");
+        assert.notEqual(restrictedMissingTiming.reason, "invalid_timing_context");
+      }
+
+      const unknownInvalidTiming = canCollectAt(
+        registry,
+        "fixture-unknown",
+        "browser_capture",
+        {
+          now: ANCHOR,
+          lastCaptureAttemptAt: "not-a-timestamp",
+        } as unknown as {
+          now: string;
+          lastCaptureAttemptAt: string | null;
+        },
+      );
+      assert.equal(unknownInvalidTiming.allowed, false);
+      if (!unknownInvalidTiming.allowed) {
+        assert.equal(unknownInvalidTiming.reason, "status_unknown");
+        assert.notEqual(unknownInvalidTiming.reason, "invalid_timing_context");
       }
     },
   );
@@ -789,20 +856,50 @@ test("static denials precede timing checks for canCollectAt", () => {
 
   const unknownSource = canCollectAt(committed, "not-a-source", "browser_capture", {
     now: ANCHOR,
-    lastSuccessfulCaptureAt: null,
+    lastCaptureAttemptAt: null,
   });
   assert.equal(unknownSource.allowed, false);
   if (!unknownSource.allowed) {
     assert.equal(unknownSource.reason, "unknown_source");
   }
 
+  const unknownSourceInvalidTiming = canCollectAt(
+    committed,
+    "not-a-source",
+    "browser_capture",
+    { now: 1 } as unknown as {
+      now: string;
+      lastCaptureAttemptAt: string | null;
+    },
+  );
+  assert.equal(unknownSourceInvalidTiming.allowed, false);
+  if (!unknownSourceInvalidTiming.allowed) {
+    assert.equal(unknownSourceInvalidTiming.reason, "unknown_source");
+    assert.notEqual(unknownSourceInvalidTiming.reason, "invalid_timing_context");
+  }
+
   const ungranted = canCollectAt(committed, "crowdvolt", "http_fetch", {
     now: ANCHOR,
-    lastSuccessfulCaptureAt: null,
+    lastCaptureAttemptAt: null,
   });
   assert.equal(ungranted.allowed, false);
   if (!ungranted.allowed) {
     assert.equal(ungranted.reason, "mode_not_allowed");
+  }
+
+  const ungrantedInvalidTiming = canCollectAt(
+    committed,
+    "crowdvolt",
+    "http_fetch",
+    { now: "not-a-timestamp" } as unknown as {
+      now: string;
+      lastCaptureAttemptAt: string | null;
+    },
+  );
+  assert.equal(ungrantedInvalidTiming.allowed, false);
+  if (!ungrantedInvalidTiming.allowed) {
+    assert.equal(ungrantedInvalidTiming.reason, "mode_not_allowed");
+    assert.notEqual(ungrantedInvalidTiming.reason, "invalid_timing_context");
   }
 });
 
@@ -818,7 +915,7 @@ test("sources without minimumIntervalSeconds are not throttled", () => {
       const registry = requireRegistry(loadSourceAccessRegistry(configPath));
       const decision = canCollectAt(registry, "fixture-allowed", "browser_capture", {
         now: offsetIso(ANCHOR, 1000),
-        lastSuccessfulCaptureAt: ANCHOR,
+        lastCaptureAttemptAt: ANCHOR,
       });
       assert.equal(decision.allowed, true);
     },
@@ -829,7 +926,7 @@ test("sources without minimumIntervalSeconds are not throttled", () => {
   );
   const dice = canCollectAt(registry, "dice", "browser_capture", {
     now: offsetIso(ANCHOR, 1000),
-    lastSuccessfulCaptureAt: ANCHOR,
+    lastCaptureAttemptAt: ANCHOR,
   });
   assert.equal(dice.allowed, false);
   if (!dice.allowed) {
@@ -946,7 +1043,7 @@ test("maximum accepted minimumIntervalSeconds boundary loads and canCollectAt st
           "browser_capture",
           {
             now: latestInstant,
-            lastSuccessfulCaptureAt: latestInstant,
+            lastCaptureAttemptAt: latestInstant,
           },
         );
         assert.equal(decision.allowed, false);
@@ -1005,7 +1102,7 @@ test("maximum accepted minimumIntervalSeconds boundary loads and canCollectAt st
           "browser_capture",
           {
             now: latestInstant,
-            lastSuccessfulCaptureAt: latestInstant,
+            lastCaptureAttemptAt: latestInstant,
           },
         );
         assert.equal(decision.allowed, false);
@@ -1022,20 +1119,20 @@ test("malformed timing context fails closed when a minimum interval exists", () 
     loadSourceAccessRegistry(COMMITTED_CONFIG_PATH),
   );
 
-  const cases: Array<{ now: unknown; lastSuccessfulCaptureAt: unknown }> = [
-    { now: "not-a-timestamp", lastSuccessfulCaptureAt: null },
-    { now: ANCHOR, lastSuccessfulCaptureAt: "2026-09-28" },
-    { now: "2026-09-28T12:00:00+00:00", lastSuccessfulCaptureAt: null },
-    { now: "2026-09-28T12:00:00", lastSuccessfulCaptureAt: null },
-    { now: "2026-02-30T12:00:00.000Z", lastSuccessfulCaptureAt: null },
-    { now: "2026-09-28T24:00:00.000Z", lastSuccessfulCaptureAt: null },
-    { now: "", lastSuccessfulCaptureAt: null },
-    { now: 1, lastSuccessfulCaptureAt: null },
-    { now: ANCHOR, lastSuccessfulCaptureAt: "" },
-    { now: ANCHOR, lastSuccessfulCaptureAt: 1 },
+  const cases: Array<{ now: unknown; lastCaptureAttemptAt: unknown }> = [
+    { now: "not-a-timestamp", lastCaptureAttemptAt: null },
+    { now: ANCHOR, lastCaptureAttemptAt: "2026-09-28" },
+    { now: "2026-09-28T12:00:00+00:00", lastCaptureAttemptAt: null },
+    { now: "2026-09-28T12:00:00", lastCaptureAttemptAt: null },
+    { now: "2026-02-30T12:00:00.000Z", lastCaptureAttemptAt: null },
+    { now: "2026-09-28T24:00:00.000Z", lastCaptureAttemptAt: null },
+    { now: "", lastCaptureAttemptAt: null },
+    { now: 1, lastCaptureAttemptAt: null },
+    { now: ANCHOR, lastCaptureAttemptAt: "" },
+    { now: ANCHOR, lastCaptureAttemptAt: 1 },
     {
       now: ANCHOR,
-      lastSuccessfulCaptureAt: offsetIso(ANCHOR, 1000),
+      lastCaptureAttemptAt: offsetIso(ANCHOR, 1000),
     },
   ];
 
@@ -1044,12 +1141,53 @@ test("malformed timing context fails closed when a minimum interval exists", () 
       registry,
       "crowdvolt",
       "browser_capture",
-      timing as { now: string; lastSuccessfulCaptureAt: string | null },
+      timing as { now: string; lastCaptureAttemptAt: string | null },
     );
     assert.equal(decision.allowed, false);
     if (!decision.allowed) {
       assert.equal(decision.reason, "invalid_timing_context");
     }
+  }
+
+  const futureAttempt = canCollectAt(registry, "crowdvolt", "browser_capture", {
+    now: ANCHOR,
+    lastCaptureAttemptAt: offsetIso(ANCHOR, 1000),
+  });
+  assert.equal(futureAttempt.allowed, false);
+  if (!futureAttempt.allowed) {
+    assert.equal(futureAttempt.reason, "invalid_timing_context");
+  }
+
+  const missingAttempt = canCollectAt(
+    registry,
+    "crowdvolt",
+    "browser_capture",
+    { now: ANCHOR } as unknown as {
+      now: string;
+      lastCaptureAttemptAt: string | null;
+    },
+  );
+  assert.equal(missingAttempt.allowed, false);
+  if (!missingAttempt.allowed) {
+    assert.equal(missingAttempt.reason, "invalid_timing_context");
+  }
+
+  const legacySuccessfulCaptureField = {
+    now: ANCHOR,
+    lastSuccessfulCaptureAt: null,
+  } as unknown;
+  const legacyOnly = canCollectAt(
+    registry,
+    "crowdvolt",
+    "browser_capture",
+    legacySuccessfulCaptureField as {
+      now: string;
+      lastCaptureAttemptAt: string | null;
+    },
+  );
+  assert.equal(legacyOnly.allowed, false);
+  if (!legacyOnly.allowed) {
+    assert.equal(legacyOnly.reason, "invalid_timing_context");
   }
 });
 
@@ -1061,19 +1199,28 @@ test("canCollectAt is pure and source-access has no capture side effects", () =>
   const sourceText = fs.readFileSync(sourcePath, "utf8");
   assert.equal(sourceText.includes("writeFile"), false);
   assert.equal(sourceText.includes("setTimeout"), false);
+  assert.equal(sourceText.includes("setInterval"), false);
   assert.equal(sourceText.includes("capturePage"), false);
   assert.equal(sourceText.toLowerCase().includes("playwright"), false);
+  assert.equal(sourceText.includes("sleep"), false);
+  assert.equal(sourceText.includes("ACCESS_BLOCKED"), false);
+  assert.equal(sourceText.includes("NOT_CONFIRMED_EVENT_PAGE"), false);
+  assert.equal(sourceText.includes("BrowserCaptureResult"), false);
+  assert.equal(sourceText.includes("browser-capture"), false);
+  assert.equal(sourceText.includes("source-adapters"), false);
+  assert.equal(/from\s+["'][^"']*browser-capture/.test(sourceText), false);
+  assert.equal(/from\s+["'][^"']*source-adapters/.test(sourceText), false);
 
   const registry = requireRegistry(
     loadSourceAccessRegistry(COMMITTED_CONFIG_PATH),
   );
   const first = canCollectAt(registry, "crowdvolt", "browser_capture", {
     now: offsetIso(ANCHOR, 30 * 60 * 1000),
-    lastSuccessfulCaptureAt: ANCHOR,
+    lastCaptureAttemptAt: ANCHOR,
   });
   const second = canCollectAt(registry, "crowdvolt", "browser_capture", {
     now: offsetIso(ANCHOR, 30 * 60 * 1000),
-    lastSuccessfulCaptureAt: ANCHOR,
+    lastCaptureAttemptAt: ANCHOR,
   });
   assert.deepEqual(first, second);
   assert.equal(Object.isFrozen(first), true);

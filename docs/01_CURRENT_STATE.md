@@ -1,7 +1,7 @@
 # Live Tape — Current State
 
 **Status:** Active  
-**Last Updated:** 2026-09-30  
+**Last Updated:** 2026-10-03  
 **Project Phase:** Research / Validation / Data Infrastructure  
 **Roadmap Phase:** Phase 1 — Historical Data Collector (in progress)
 
@@ -54,8 +54,11 @@ A central source-access registry is active and fail-closed (D-008).
 `config/source-access.json` is the human-reviewable source record.
 `packages/source-access` validates that record and exposes static
 authorization (`canCollect`) and timing authorization
-(`canCollectAt`). Collection fails closed unless a source and the
-requested mode are explicitly `ALLOWED`.
+(`canCollectAt`). `canCollectAt` consumes `lastCaptureAttemptAt`,
+the previous durable pre-request browser-capture attempt claim for
+the same source target (D-009). The package remains a pure policy
+layer and stores no attempt history. Collection fails closed unless
+a source and the requested mode are explicitly `ALLOWED`.
 
 CrowdVolt is `ALLOWED` for `browser_capture` based on written
 permission dated 2026-09-28. Evidence is
@@ -76,15 +79,16 @@ parsing. No valid CrowdVolt event-page HTML has yet been captured
 through the authorized BrowserCapture path. No CrowdVolt market
 parser exists yet.
 
-No scheduler or orchestrator exists. Unattended CrowdVolt collection
-is not enabled. One manually initiated CrowdVolt `browser_capture`
-was stored on 2026-09-30 (`capturedAt`
-`2026-09-30T18:31:01.194Z`). The artifacts are a Cloudflare block
-page, not the event market. Captured block evidence remains
-preserved. The capture time is recorded in
-`docs/research/sources/crowdvolt-adapter-reconnaissance.md`. There is
-still no orchestrator-owned per-event history enforcing the timing
-decision before each run.
+No durable capture-attempt history store or orchestrator exists yet.
+Unattended CrowdVolt collection remains disabled. One manually
+initiated CrowdVolt `browser_capture` was stored on 2026-09-30
+(`capturedAt` `2026-09-30T18:31:01.194Z`). The artifacts are a
+Cloudflare block page, not the event market. Captured block evidence
+remains preserved. The capture time is recorded in
+`docs/research/sources/crowdvolt-adapter-reconnaissance.md`. The
+historical next eligible instant for that completed manual run
+remains `2026-09-30T19:31:01.194Z`. No attempt-claim timestamp is
+recorded for that run.
 
 Market parsing, normalization, PostgreSQL persistence, and historical
 export are not implemented. Q-004 and Q-005 remain open. First-source

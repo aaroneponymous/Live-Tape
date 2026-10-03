@@ -79,7 +79,7 @@ export type CollectDecision =
 
 export type CollectAtContext = {
   readonly now: string;
-  readonly lastSuccessfulCaptureAt: string | null;
+  readonly lastCaptureAttemptAt: string | null;
 };
 
 export type CollectAtDecision =
@@ -851,15 +851,62 @@ export function canCollect(
 }
 
 /**
- * Timing-aware authorization check for a single capture target.
+ * Timing-aware authorization check for one source target.
  *
- * The caller must supply `lastSuccessfulCaptureAt` for the SAME event/target.
- * This function does not identify events and does not store capture history.
- * It does not enable unattended collection by itself.
+ * `lastCaptureAttemptAt` is the UTC instant at which the previous automated
+ * browser capture attempt for this same source target was durably claimed
+ * before that attempt could send a request. It is an authorization and
+ * rate-limit attempt claim. It is not evidence time (`capturedAt`), a
+ * normalized observation time (`observedAt`), or the next eligible instant
+ * (`retryAt`).
  *
- * A future unattended collector must consult both `canCollect` (or the static
- * checks inside this function) and this timing result, using durable history
- * the caller owns.
+ * `null` means a successful history read established that no prior
+ * capture-attempt claim exists for this same target. `null` does not mean
+ * the history lookup failed. This package cannot tell those cases apart.
+ * That distinction belongs to the future orchestrator, which must fail
+ * closed when history cannot be read and may pass `null` only after a
+ * successful read establishes that no prior claim exists.
+ *
+ * For a source with `minimumIntervalSeconds`, deny while
+ * `now - lastCaptureAttemptAt` is strictly less than that interval, and
+ * allow when elapsed time is greater than or equal to it, including exact
+ * equality. `retryAt` is `lastCaptureAttemptAt + minimumIntervalSeconds`.
+ *
+ * A future `lastCaptureAttemptAt`, a malformed timestamp, or a missing
+ * `lastCaptureAttemptAt` property is `invalid_timing_context` when a
+ * minimum interval applies. Static UNKNOWN, RESTRICTED, unknown-source,
+ * and ungranted-mode denials are returned before timing validation.
+ * Sources without `minimumIntervalSeconds` are not throttled; their timing
+ * context is not applied.
+ *
+ * This decision does not take page classification, capture results, or
+ * parser results as input. A supplied `lastCaptureAttemptAt` inside the
+ * interval denies with `minimum_interval_not_elapsed` regardless of any
+ * later page outcome. This function does not identify targets, store
+ * history, read history, or perform capture. It does not enable unattended
+ * collection by itself.
+ *
+ * Future caller contract. The orchestrator must:
+ * 1. load the source-access registry;
+ * 2. durably read the previous attempt claim for the same source target;
+ * 3. fail closed if that history cannot be read;
+ * 4. call this function with the previous claim instant, or with null only
+ *    after a successful read establishes no prior claim;
+ * 5. if denied, do not capture;
+ * 6. if allowed, durably record a new capture-attempt claim before the
+ *    browser capture starts;
+ * 7. if that claim record fails, do not start the browser capture;
+ * 8. start the browser capture only after the claim is durable;
+ * 9. do not clear the claim because navigation, HTML capture, screenshot
+ *    capture, an invalid clock, artifact persistence, parsing, absence of
+ *    a market observation, or process stop happens after the claim became
+ *    durable, including when the page is later classified as blocked or
+ *    unconfirmed.
+ *
+ * A future orchestrator may restore or clear that new claim for a
+ * definitively pre-request `invalid_url` outcome. Do not generalize that
+ * rollback to navigation or browser failures whose request status may be
+ * unknown.
  */
 export function canCollectAt(
   registry: SourceAccessRegistry,
@@ -882,7 +929,10 @@ export function canCollectAt(
     return staticDecision;
   }
 
-  if (!isValidTimingContext(timingContext)) {
+  if (
+    !isValidTimingContext(timingContext) ||
+    !Object.hasOwn(timingContext, "lastCaptureAttemptAt")
+  ) {
     return Object.freeze({
       allowed: false as const,
       sourceId,
@@ -893,12 +943,13 @@ export function canCollectAt(
     });
   }
 
-  if (timingContext.lastSuccessfulCaptureAt === null) {
+  const lastCaptureAttemptAt = timingContext["lastCaptureAttemptAt"];
+  if (lastCaptureAttemptAt === null) {
     return staticDecision;
   }
 
   const nowMs = parseUtcInstantMs(timingContext.now);
-  const lastMs = parseUtcInstantMs(timingContext.lastSuccessfulCaptureAt);
+  const lastMs = parseUtcInstantMs(lastCaptureAttemptAt);
   if (nowMs === undefined || lastMs === undefined) {
     return Object.freeze({
       allowed: false as const,
@@ -960,7 +1011,7 @@ function isValidTimingContext(value: unknown): value is CollectAtContext {
     return false;
   }
 
-  if (!Object.hasOwn(value, "now") || !Object.hasOwn(value, "lastSuccessfulCaptureAt")) {
+  if (!Object.hasOwn(value, "now") || !Object.hasOwn(value, "lastCaptureAttemptAt")) {
     return false;
   }
 
@@ -968,7 +1019,7 @@ function isValidTimingContext(value: unknown): value is CollectAtContext {
     return false;
   }
 
-  const last = value["lastSuccessfulCaptureAt"];
+  const last = value["lastCaptureAttemptAt"];
   if (last !== null && typeof last !== "string") {
     return false;
   }
